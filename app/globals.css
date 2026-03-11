@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f5f2ec;
+  --ink: #141414;
+  --muted: #4b4b4b;
+  --surface: #ffffff;
+  --surface-soft: rgba(255, 255, 255, 0.72);
+  --accent: #2a7bf6;
+  --accent-2: #1eb980;
+  --accent-3: #f4a546;
+  --accent-4: #ff6b6b;
+  --ring: rgba(15, 23, 42, 0.12);
+  --font-body: var(--font-sora);
+  --font-display: var(--font-space-grotesk);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.card {
+  background: var(--surface-soft);
+  border: 1px solid var(--ring);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+}
+
+@keyframes floatSlow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.float-slow {
+  animation: floatSlow 14s ease-in-out infinite;
+}
+
+.fade-in {
+  animation: fadeInUp 0.9s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-slow,
+  .fade-in {
+    animation: none;
+  }
 }
