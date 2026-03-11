@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getTool, normalizeSlug, TOOLS } from "@/lib/tools";
+import { getTool, normalizeSlug, TOOLS, type Tool } from "@/lib/tools";
 import { SufumiNav } from "@/components/SufumiNav";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -53,21 +53,39 @@ function useReveal(threshold = 0.08) {
         const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
         io.observe(el);
         return () => io.disconnect();
-    }, []);
+    }, [threshold]);
     return { ref, visible };
 }
 
 /* ─────────────────────────────────────────────────────────────────
    Animated install command (tool-specific terminal snippet)
 ───────────────────────────────────────────────────────────────── */
-function InstallBlock({ toolId, accent }: { toolId: string; accent: string }) {
-    const cmd = `jpm install ${toolId.toLowerCase()}`;
+function InstallBlock({ install, accent }: { install: Tool["install"]; accent: string }) {
+    type Step = Tool["install"]["methods"][number]["steps"][number];
+    type CommandStep = Extract<Step, { kind: "command" }>;
+    type DownloadStep = Extract<Step, { kind: "download" }>;
+
+    const methods = install.methods;
+    const defaultId = install.defaultId ?? methods[0]?.id;
+    const [activeId, setActiveId] = useState(defaultId ?? "");
+    const active = methods.find((m) => m.id === activeId) ?? methods[0];
+    const steps = active?.steps ?? [];
+    const commandSteps = steps.filter((s): s is CommandStep => s.kind === "command");
+    const downloadSteps = steps.filter((s): s is DownloadStep => s.kind === "download");
+    const cmd = commandSteps.map((s) => s.command).join("\n");
+    const shell = (commandSteps[0] && "shell" in commandSteps[0] && commandSteps[0].shell) ? commandSteps[0].shell : "powershell";
+
     const [typed, setTyped] = useState("");
     const [done, setDone] = useState(false);
     const { ref, visible } = useReveal(0.3);
 
     useEffect(() => {
-        if (!visible || done) return;
+        setTyped("");
+        setDone(false);
+    }, [cmd]);
+
+    useEffect(() => {
+        if (!visible || done || !cmd) return;
         let i = 0;
         const iv = setInterval(() => {
             i++;
@@ -77,19 +95,60 @@ function InstallBlock({ toolId, accent }: { toolId: string; accent: string }) {
         return () => clearInterval(iv);
     }, [visible, done, cmd]);
 
+    const hasCommands = cmd.length > 0;
+    const shellLabel = hasCommands ? (shell === "powershell" ? "windows powershell" : shell) : "downloads";
+    const prompt = shell === "powershell" ? "PS >" : shell === "cmd" ? "C:\\>" : "$";
+
     return (
         <div ref={ref} className="tp-install">
-            <div className="tp-install__chrome">
-                <span className="tp-chrome-dot" style={{ background: "#FF5F56" }} />
-                <span className="tp-chrome-dot" style={{ background: "#FFBD2E" }} />
-                <span className="tp-chrome-dot" style={{ background: "#27C93F" }} />
-                <span className="tp-chrome-label">windows powershell</span>
+            <div className="tp-install__tabs">
+                {methods.map((method) => {
+                    const activeTab = method.id === active?.id;
+                    return (
+                        <button
+                            key={method.id}
+                            className={`tp-install__tab${activeTab ? " is-active" : ""}`}
+                            onClick={() => setActiveId(method.id)}
+                            style={activeTab ? { borderColor: accent, color: accent } : {}}
+                        >
+                            {method.label}
+                        </button>
+                    );
+                })}
             </div>
-            <div className="tp-install__body">
-                <span className="tp-install__prompt" style={{ color: accent }}>PS &gt;</span>
-                <span className="tp-install__cmd">{typed}</span>
-                {!done && <span className="tp-install__cursor" style={{ background: `${accent}88` }} />}
-            </div>
+            {hasCommands && (
+                <>
+                    <div className="tp-install__chrome">
+                        <span className="tp-chrome-dot" style={{ background: "#FF5F56" }} />
+                        <span className="tp-chrome-dot" style={{ background: "#FFBD2E" }} />
+                        <span className="tp-chrome-dot" style={{ background: "#27C93F" }} />
+                        <span className="tp-chrome-label">{shellLabel}</span>
+                    </div>
+                    <div className="tp-install__body">
+                        <span className="tp-install__prompt" style={{ color: accent }}>{prompt}</span>
+                        <span className="tp-install__cmd">{typed}</span>
+                        {!done && <span className="tp-install__cursor" style={{ background: `${accent}88` }} />}
+                    </div>
+                </>
+            )}
+            {steps.length > 0 && (
+                <div className="tp-install__steps">
+                    {steps.map((step, idx) => (
+                        <div key={`${step.kind}-${idx}`} className="tp-install__step">
+                            <span className="tp-install__step-num">{String(idx + 1).padStart(2, "0")}</span>
+                            <span className="tp-install__step-label">{step.label}</span>
+                            {step.kind === "download" && (
+                                <a className="tp-install__download" href={step.url} target="_blank" rel="noreferrer">
+                                    Download
+                                </a>
+                            )}
+                        </div>
+                    ))}
+                    {downloadSteps.length === 0 && !hasCommands && (
+                        <span className="tp-install__step-label">No install steps provided.</span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -433,6 +492,32 @@ export default function ToolPage() {
                     border-radius: 8px; overflow: hidden;
                     box-shadow: 0 40px 80px rgba(0,0,0,.5);
                 }
+                .tp-install__tabs {
+                    display: flex; flex-wrap: wrap; gap: .5rem;
+                    padding: .7rem .9rem;
+                    border-bottom: 1px solid rgba(238,235,228,.06);
+                    background: rgba(238,235,228,.012);
+                }
+                .tp-install__tab {
+                    background: transparent;
+                    border: 1px solid rgba(238,235,228,.12);
+                    color: rgba(238,235,228,.55);
+                    font-family: 'DM Mono', monospace;
+                    font-size: .6rem;
+                    text-transform: uppercase;
+                    letter-spacing: .12em;
+                    padding: 6px 10px;
+                    border-radius: 999px;
+                    cursor: none;
+                    transition: border-color .2s, color .2s, background .2s;
+                }
+                .tp-install__tab:hover {
+                    color: rgba(238,235,228,.85);
+                    border-color: rgba(238,235,228,.3);
+                }
+                .tp-install__tab.is-active {
+                    background: rgba(238,235,228,.05);
+                }
                 .tp-install__chrome {
                     display: flex; align-items: center; gap: 6px; padding: 11px 14px;
                     border-bottom: 1px solid rgba(238,235,228,.06);
@@ -446,16 +531,46 @@ export default function ToolPage() {
                 }
                 .tp-install__body {
                     padding: 1.25rem 1.5rem;
-                    display: flex; align-items: center; gap: .75rem;
+                    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
                     font-family: 'DM Mono', monospace; font-size: .82rem; line-height: 1.6;
                 }
                 .tp-install__prompt { flex-shrink: 0; font-weight: 500; }
-                .tp-install__cmd { color: rgba(238,235,228,.78); }
+                .tp-install__cmd { color: rgba(238,235,228,.78); white-space: pre-wrap; word-break: break-word; }
                 .tp-install__cursor {
                     display: inline-block; width: 8px; height: 16px;
                     animation: sfblink 1s step-end infinite;
                 }
                 @keyframes sfblink { 50% { opacity: 0; } }
+                .tp-install__steps {
+                    border-top: 1px solid rgba(238,235,228,.06);
+                    padding: 1rem 1.25rem;
+                    display: flex; flex-direction: column; gap: .65rem;
+                    background: rgba(238,235,228,.01);
+                }
+                .tp-install__step {
+                    display: flex; align-items: center; gap: .85rem;
+                    font-family: 'DM Mono', monospace; font-size: .66rem;
+                    color: rgba(238,235,228,.55);
+                }
+                .tp-install__step-num {
+                    color: rgba(238,235,228,.3);
+                    font-size: .55rem;
+                    letter-spacing: .2em;
+                }
+                .tp-install__step-label { flex: 1; }
+                .tp-install__download {
+                    display: inline-flex; align-items: center; gap: .4rem;
+                    text-decoration: none; text-transform: uppercase; letter-spacing: .12em;
+                    font-size: .55rem; padding: 6px 10px; border-radius: 999px;
+                    border: 1px solid rgba(238,235,228,.2);
+                    color: rgba(238,235,228,.8);
+                    transition: border-color .2s, color .2s, background .2s;
+                }
+                .tp-install__download:hover {
+                    border-color: rgba(238,235,228,.45);
+                    color: #fff;
+                    background: rgba(238,235,228,.06);
+                }
 
                 /* ══════════════════════════════════════════
                    PREV / NEXT navigation
@@ -651,7 +766,7 @@ export default function ToolPage() {
                 >
                     <div className="tp-desc__inner">
                         <div>
-                            <span className="tp-section-label">// 01 — What it is</span>
+                            <span className="tp-section-label">{"// 01 — What it is"}</span>
                             <span className="tp-desc__num" aria-hidden>01</span>
                             <blockquote className="tp-desc__quote">
                                 {tool.tagline.includes("—")
@@ -705,7 +820,7 @@ export default function ToolPage() {
                         transition: "opacity .85s ease, transform .85s ease",
                     }}
                 >
-                    <span className="tp-section-label">// 02 — Why it's different</span>
+                    <span className="tp-section-label">{"// 02 — Why it's different"}</span>
                     <h2 style={{
                         fontFamily: "'Bebas Neue', sans-serif",
                         fontSize: "clamp(2.4rem, 4.5vw, 3.8rem)",
@@ -748,15 +863,15 @@ export default function ToolPage() {
                     <span className="tp-qs__bg" aria-hidden>START</span>
                     <div className="tp-qs__inner">
                         <div>
-                            <span className="tp-section-label">// 03 — Get it</span>
+                            <span className="tp-section-label">{"// 03 — Get it"}</span>
                             <h2 className="tp-qs__headline">
                                 Install<br />
                                 {tool.id}.
-                                <em>One command.</em>
+                                <em>Your way.</em>
                             </h2>
                             <p className="tp-qs__sub">
-                                Use JPM — the package manager for the whole suite.
-                                Or clone from GitHub and build from source.
+                                Pick the method that fits your setup — build from source,
+                                use a package install, or grab a release.
                             </p>
                             <div className="tp-qs__links">
                                 <Link
@@ -777,7 +892,7 @@ export default function ToolPage() {
                                 </a>
                             </div>
                         </div>
-                        <InstallBlock toolId={tool.id} accent={accent} />
+                        <InstallBlock install={tool.install} accent={accent} />
                     </div>
                 </div>
 

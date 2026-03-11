@@ -6,11 +6,23 @@ export type DocSection = {
 
 export type DocBlock =
     | { type: "p"; text: string }
+    | { type: "download"; label: string; url: string; file?: string }
     | { type: "code"; lang: string; code: string }
     | { type: "h3"; text: string }
     | { type: "ul"; items: string[] }
     | { type: "table"; headers: string[]; rows: string[][] }
     | { type: "callout"; kind: "tip" | "warn" | "info"; text: string };
+
+export type InstallStep =
+    | { kind: "command"; label: string; command: string; shell?: "powershell" | "bash" | "cmd" }
+    | { kind: "download"; label: string; url: string }
+    | { kind: "instruction"; label: string };
+
+export type InstallMethod = {
+    id: string;
+    label: string;
+    steps: InstallStep[];
+};
 
 export type Tool = {
     id: string;
@@ -24,6 +36,10 @@ export type Tool = {
     chips: string[];
     badge?: string;
     highlights: { icon: string; label: string; text: string }[];
+    install: {
+        defaultId?: string;
+        methods: InstallMethod[];
+    };
     docs: DocSection[];
 };
 
@@ -35,19 +51,59 @@ export const TOOLS: Tool[] = [
         id: "JHR",
         slug: "jhr",
         lang: "Java",
-        title: "Java Hot Reloader",
-        tagline: "Live reload for Java — built for game dev.",
+        title: "Java Hot Reload",
+        tagline: "Save. Recompile. Restart. Automatically.",
         description:
-            "JHR watches your Java source files and reloads changed classes at runtime without restarting the JVM. Includes an inbuilt error/log window so you can debug without leaving your app.",
+            "JHR watches your .java files, recompiles on change, and restarts your app for an instant feedback loop — with a desktop overlay for errors.",
         accent: "#FF6B2B",
         github: "https://github.com/JasnRathore/jhr",
-        chips: ["hot-reload", "game dev", "debug window", "Java"],
-        badge: "stable",
+        chips: ["hot-reload", "Java", "watcher", "desktop overlay"],
+        badge: "active",
         highlights: [
-            { icon: "⚡", label: "No JVM restart", text: "Classes reload in-place — keep your game state running." },
-            { icon: "🪟", label: "Inbuilt log window", text: "Errors and logs surface in a floating panel inside your app." },
-            { icon: "🔍", label: "Precise reload", text: "Only recompiles changed files, not the whole project." },
+            { icon: "⚡", label: "Auto rebuild", text: "Detects .java changes, runs javac, and relaunches your app." },
+            { icon: "🪟", label: "Error overlay", text: "Compilation failures pop a Swing overlay so you never miss them." },
+            { icon: "🧩", label: "Configurable", text: "Simple .jhr.conf for classpath, args, watch dirs, and delays." },
         ],
+        install: {
+            defaultId: "build",
+            methods: [
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "bash",
+                            command: "git clone https://github.com/JasnRathore/jhr",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build JHR",
+                            shell: "bash",
+                            command: "cd jhr && chmod +x build && ./build",
+                        },
+                        {
+                            kind: "command",
+                            label: "Run the launcher",
+                            shell: "bash",
+                            command: "cd jhr && ./target/jhr",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "jhr.jar",
+                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/jhr.jar",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -55,25 +111,21 @@ export const TOOLS: Tool[] = [
                 content: [
                     {
                         type: "p",
-                        text: "JHR (Java Hot Reloader) is a lightweight hot-reload utility targeting Java game development. It watches a source directory, detects file changes, recompiles the affected classes, and swaps them into the running JVM using the Instrumentation API — all without restarting.",
+                        text: "JHR (Java Hot Reload) watches your source tree, recompiles when .java files change, and restarts your program automatically. It is designed for tight feedback loops during development.",
                     },
                     {
                         type: "callout",
                         kind: "info",
-                        text: "JHR works best with projects that separate game logic from engine code. Hot-reloading works on logic classes; engine/renderer classes that hold JVM-level state should be restarted normally.",
+                        text: "JHR uses javac/java directly and shows a desktop overlay window whenever compilation fails.",
                     },
-                    {
-                        type: "h3",
-                        text: "How it works",
-                    },
+                    { type: "h3", text: "What it does" },
                     {
                         type: "ul",
                         items: [
-                            "Attaches to the running JVM as a Java agent via -javaagent flag.",
-                            "Uses WatchService to monitor .java source files for modifications.",
-                            "On change, invokes javac on the modified file in-process.",
-                            "Redefines the class via Instrumentation.redefineClasses().",
-                            "Logs all events (compile errors, reload success/fail) to the inbuilt window.",
+                            "Watches your source directory with debouncing to avoid rebuild storms.",
+                            "Compiles updated files with javac on every save.",
+                            "Restarts the running process so changes are reflected immediately.",
+                            "Shows errors in an always-on-top Swing overlay window.",
                         ],
                     },
                 ],
@@ -82,135 +134,120 @@ export const TOOLS: Tool[] = [
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Build from source" },
                     {
-                        type: "h3",
-                        text: "Via JPM (recommended)",
+                        type: "code",
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/jhr
+cd jhr`,
                     },
                     {
                         type: "code",
-                        lang: "powershell",
-                        code: `jpm install jhr`,
+                        lang: "bash",
+                        code: `chmod +x build
+./build`,
                     },
                     {
-                        type: "h3",
-                        text: "Manual (JAR)",
+                        type: "code",
+                        lang: "bash",
+                        code: `chmod +x target/jhr
+./target/jhr`,
                     },
                     {
                         type: "p",
-                        text: "Download the latest jhr-agent.jar from the GitHub releases page and place it anywhere on your system.",
+                        text: "This produces target/jhr.jar and the target/jhr launcher script.",
+                    },
+                    { type: "h3", text: "Download binary" },
+                    {
+                        type: "p",
+                        text: "Download the latest release asset, extract it, and add the folder to PATH.",
                     },
                     {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Download
-Invoke-WebRequest -Uri https://github.com/JasnRathore/jhr/releases/latest/download/jhr-agent.jar -OutFile jhr-agent.jar`,
-                    },
-                    {
-                        type: "callout",
-                        kind: "tip",
-                        text: "Add the JAR path to your JAVA_TOOLS_OPTIONS environment variable so it's always available.",
+                        type: "download",
+                        label: "Download latest release",
+                        file: "jhr.jar",
+                        url: "https://github.com/JasnRathore/jhr/releases/latest",
                     },
                 ],
             },
             {
-                id: "usage",
-                title: "Usage",
+                id: "quick-start",
+                title: "Quick Start",
                 content: [
                     {
-                        type: "h3",
-                        text: "Attaching the agent",
-                    },
-                    {
                         type: "p",
-                        text: "Pass JHR as a -javaagent when launching your application. Point it at your source directory.",
+                        text: "From your Java project directory, initialize a config file and start JHR:",
                     },
+                    { type: "code", lang: "bash", code: `jhr init` },
                     {
                         type: "code",
-                        lang: "powershell",
-                        code: `java -javaagent:jhr-agent.jar=src=./src/main/java -jar MyGame.jar`,
+                        lang: "ini",
+                        code: `root = src
+main_class = com.example.Main
+classpath = src
+delay = 1000`,
                     },
-                    {
-                        type: "h3",
-                        text: "Agent options",
-                    },
-                    {
-                        type: "table",
-                        headers: ["Option", "Default", "Description"],
-                        rows: [
-                            ["src", ".", "Root directory to watch for .java changes"],
-                            ["classpath", ".", "Classpath used when recompiling changed files"],
-                            ["window", "true", "Show the inbuilt log/error window"],
-                            ["poll", "300", "File poll interval in milliseconds"],
-                        ],
-                    },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Multiple options separated by comma
-java -javaagent:jhr-agent.jar=src=./src,classpath=./lib/*,poll=500 -jar MyGame.jar`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Maven / Gradle integration",
-                    },
-                    {
-                        type: "code",
-                        lang: "xml",
-                        code: `<!-- Maven: add to surefire or exec plugin JVM args -->
-<configuration>
-  <argLine>-javaagent:\${project.basedir}/jhr-agent.jar=src=src/main/java</argLine>
-</configuration>`,
-                    },
-                    {
-                        type: "code",
-                        lang: "groovy",
-                        code: `// Gradle
-tasks.named('run') {
-    jvmArgs "-javaagent:jhr-agent.jar=src=src/main/java"
-}`,
-                    },
+                    { type: "code", lang: "bash", code: `jhr` },
                 ],
             },
             {
-                id: "log-window",
-                title: "Log Window",
+                id: "configuration",
+                title: "Configuration",
                 content: [
                     {
-                        type: "p",
-                        text: "JHR ships with a built-in overlay window that shows live compile errors and reload events. It floats over your application and can be toggled with a hotkey.",
-                    },
-                    {
                         type: "table",
-                        headers: ["Hotkey", "Action"],
+                        headers: ["Key", "Default", "Description"],
                         rows: [
-                            ["Ctrl+Shift+L", "Toggle log window visibility"],
-                            ["Ctrl+Shift+C", "Clear all log entries"],
-                            ["Ctrl+Shift+R", "Force reload all watched classes"],
+                            ["root", "src", "Source directory to watch"],
+                            ["watch_dirs", ".", "Comma-separated subdirectories to watch"],
+                            ["watch_exts", ".java", "File extensions that trigger rebuild"],
+                            ["exclude_dirs", ".git,tmp,vendor,target,build", "Directories to ignore"],
+                            ["main_class", "Demo", "Fully-qualified main class to run"],
+                            ["classpath", "src", "Classpath for javac/java"],
+                            ["javac_flags", "(empty)", "Extra javac flags"],
+                            ["jvm_args", "(empty)", "JVM flags like -Xmx"],
+                            ["delay", "1000", "Debounce delay in ms"],
+                            ["build_cmd", "(empty)", "Optional custom build command"],
+                            ["log_level", "info", "debug | info | warn | error"],
                         ],
                     },
                     {
                         type: "callout",
                         kind: "tip",
-                        text: "Set window=false in agent options to disable the overlay in production builds.",
+                        text: "Use build_cmd for multi-module projects that need custom build steps.",
                     },
                 ],
             },
             {
-                id: "limitations",
-                title: "Limitations",
+                id: "commands",
+                title: "Commands",
                 content: [
                     {
-                        type: "callout",
-                        kind: "warn",
-                        text: "The standard JVM Instrumentation API only supports redefining method bodies. Adding/removing fields or changing class hierarchies requires a full restart.",
+                        type: "table",
+                        headers: ["Command", "Description"],
+                        rows: [
+                            ["jhr", "Start hot-reload using .jhr.conf"],
+                            ["jhr init", "Generate a default .jhr.conf"],
+                            ["jhr version", "Print version info"],
+                            ["jhr help", "Show usage"],
+                        ],
+                    },
+                ],
+            },
+            {
+                id: "error-overlay",
+                title: "Error Overlay",
+                content: [
+                    {
+                        type: "p",
+                        text: "When compilation fails, JHR opens an always-on-top Swing window with the full javac output. Once you fix the error and save, the overlay dismisses automatically.",
                     },
                     {
                         type: "ul",
                         items: [
-                            "Cannot add new fields or methods to existing classes.",
-                            "Cannot change a class's superclass or implemented interfaces.",
-                            "Static initializer blocks run only once on first load.",
-                            "Works on HotSpot JVM (Oracle/OpenJDK). Other JVMs untested.",
+                            "Shows the file and line that failed to compile.",
+                            "Displays full stderr output in a scrollable panel.",
+                            "Auto-hides on the next successful rebuild.",
                         ],
                     },
                 ],
@@ -225,19 +262,65 @@ tasks.named('run') {
         id: "JPM",
         slug: "jpm",
         lang: "Go · Turso",
-        title: "Windows Package Manager",
-        tagline: "Install your tools. No ceremony.",
+        title: "Jasn Package Manager",
+        tagline: "Your registry, your rules.",
         description:
-            "JPM is a minimal package manager for Windows built to make installing personal and community dev tools a one-liner. It ships with a custom instruction parser so packages can define their own install steps.",
+            "JPM is a lightweight CLI package manager backed by a Turso/libSQL registry and a local SQLite database for tracking installs and history.",
         accent: "#FFB830",
         github: "https://github.com/JasnRathore/jpm",
-        chips: ["CLI", "custom parser", "windows", "Go"],
+        chips: ["CLI", "package manager", "Turso", "SQLite", "semver"],
         badge: "active",
         highlights: [
-            { icon: "📦", label: "Simple registry", text: "Packages live in a flat registry — easy to publish, easy to audit." },
-            { icon: "🧩", label: "Custom parser", text: "Each package ships install instructions in a tiny DSL — no shell scripts." },
-            { icon: "⚡", label: "Fast installs", text: "Written in Go. Parallel downloads, instant extracts." },
+            { icon: "📦", label: "Remote registry", text: "Fetch package metadata from a Turso/libSQL backend." },
+            { icon: "🧾", label: "Local ledger", text: "Track installs, files, and PATH changes in SQLite." },
+            { icon: "🧩", label: "Install DSL", text: "Packages define install steps in a tiny instruction language." },
         ],
+        install: {
+            defaultId: "build",
+            methods: [
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "bash",
+                            command: "git clone https://github.com/JasnRathore/jpm",
+                        },
+                        {
+                            kind: "command",
+                            label: "Create config/.env",
+                            shell: "bash",
+                            command: "cd jpm && printf \"URL=libsql://your-db.turso.io\\nTOKEN=your-token\\n\" > config/.env",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the binary",
+                            shell: "bash",
+                            command: "cd jpm && go build -o jpm .",
+                        },
+                        {
+                            kind: "command",
+                            label: "Initialize the local DB",
+                            shell: "bash",
+                            command: "cd jpm && ./jpm initdb",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "jpm.exe",
+                            url: "https://github.com/JasnRathore/jpm/releases/latest/download/jpm.exe",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -245,12 +328,31 @@ tasks.named('run') {
                 content: [
                     {
                         type: "p",
-                        text: "JPM (Jasn Package Manager) is a lightweight Windows package manager designed for developers who want a simple, scriptable way to manage personal tools. Unlike winget or choco, JPM is tiny, requires no admin rights for user-scoped installs, and uses a human-readable instruction format instead of XML manifests.",
+                        text: "JPM is a developer-focused package manager that downloads tools from a remote registry and tracks every installation locally. It resolves semver constraints and runs install steps defined in a minimal instruction format.",
                     },
                     {
                         type: "callout",
                         kind: "info",
-                        text: "JPM bootstraps itself — once you have the binary, every other sufumi tool installs via jpm install <name>.",
+                        text: "The registry lives in Turso/libSQL; your machine keeps a local SQLite database of installs and history.",
+                    },
+                ],
+            },
+            {
+                id: "requirements",
+                title: "Requirements",
+                content: [
+                    {
+                        type: "ul",
+                        items: [
+                            "Go 1.24.4+",
+                            "A Turso account with database URL and auth token",
+                            "config/.env with URL and TOKEN values",
+                        ],
+                    },
+                    {
+                        type: "callout",
+                        kind: "warn",
+                        text: "The config is embedded at build time using Go embed, so config/.env must exist before building.",
                     },
                 ],
             },
@@ -258,30 +360,49 @@ tasks.named('run') {
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Build from source" },
                     {
-                        type: "h3",
-                        text: "Bootstrap install",
+                        type: "code",
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/jpm
+cd jpm`,
                     },
+                    {
+                        type: "code",
+                        lang: "bash",
+                        code: `printf "URL=libsql://your-db.turso.io\nTOKEN=your-token\n" > config/.env`,
+                    },
+                    {
+                        type: "code",
+                        lang: "bash",
+                        code: `go build -o jpm .`,
+                    },
+                    { type: "h3", text: "Download release" },
                     {
                         type: "p",
-                        text: "Run the bootstrap script in PowerShell. This downloads the JPM binary and adds it to your user PATH.",
+                        text: "Download the latest binary, place config/.env next to it, then initialize the local database.",
                     },
                     {
-                        type: "code",
-                        lang: "powershell",
-                        code: `irm https://raw.githubusercontent.com/JasnRathore/jpm/main/install.ps1 | iex`,
+                        type: "download",
+                        label: "Download latest release",
+                        file: "jpm.exe",
+                        url: "https://github.com/JasnRathore/jpm/releases/latest",
                     },
+                ],
+            },
+            {
+                id: "initdb",
+                title: "Initialize Database",
+                content: [
                     {
-                        type: "h3",
-                        text: "Manual",
+                        type: "p",
+                        text: "JPM stores local history and tracked files in jpm.db. Initialize it once before use:",
                     },
+                    { type: "code", lang: "bash", code: `./jpm initdb` },
                     {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Download latest release
-Invoke-WebRequest -Uri https://github.com/JasnRathore/jpm/releases/latest/download/jpm.exe -OutFile "$env:LOCALAPPDATA\\jpm\\jpm.exe"
-# Add to PATH
-[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:LOCALAPPDATA\\jpm", "User")`,
+                        type: "callout",
+                        kind: "info",
+                        text: "Safe to run multiple times — it will not overwrite existing data.",
                     },
                 ],
             },
@@ -293,85 +414,73 @@ Invoke-WebRequest -Uri https://github.com/JasnRathore/jpm/releases/latest/downlo
                         type: "table",
                         headers: ["Command", "Description"],
                         rows: [
-                            ["jpm install <pkg>", "Download and install a package"],
-                            ["jpm remove <pkg>", "Uninstall a package"],
-                            ["jpm list", "List all installed packages"],
-                            ["jpm search <query>", "Search the registry"],
-                            ["jpm update", "Update all installed packages"],
-                            ["jpm update <pkg>", "Update a specific package"],
-                            ["jpm info <pkg>", "Show package metadata"],
+                            ["initdb", "Initialize local SQLite schema"],
+                            ["search [name]", "Browse or search packages"],
+                            ["install <name>[@version]", "Download and install a package"],
+                            ["list", "Show installed packages"],
+                            ["update [name]", "Update one or all packages"],
+                            ["remove <name>", "Uninstall a package"],
+                            ["info <name>", "Show detailed package info"],
                         ],
-                    },
-                    {
-                        type: "h3",
-                        text: "Install flags",
-                    },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Install to a specific directory
-jpm install glide --dir C:\\tools
-
-# Install specific version
-jpm install jhr@1.2.0
-
-# Skip confirmation prompts
-jpm install arlo --yes`,
                     },
                 ],
             },
             {
-                id: "packages",
-                title: "Writing Packages",
+                id: "examples",
+                title: "Examples",
                 content: [
                     {
-                        type: "p",
-                        text: "A JPM package is a folder with a jpm.pkg file — a plain-text instruction file that describes how to fetch and install the tool.",
+                        type: "code",
+                        lang: "bash",
+                        code: `./jpm search nodejs
+./jpm search nodejs --all
+./jpm install nodejs@^1.2.0
+./jpm list --outdated
+./jpm update --all`,
                     },
+                ],
+            },
+            {
+                id: "install-flow",
+                title: "How Installation Works",
+                content: [
                     {
-                        type: "h3",
-                        text: "jpm.pkg format",
+                        type: "ul",
+                        items: [
+                            "Fetch metadata from the Turso registry.",
+                            "Resolve semver constraints to a release.",
+                            "Download and verify the archive checksum.",
+                            "Parse the release instruction list.",
+                            "Execute steps (extract, move, add PATH, etc.).",
+                            "Record everything into jpm.db.",
+                        ],
                     },
+                ],
+            },
+            {
+                id: "instructions",
+                title: "Instruction Language",
+                content: [
                     {
                         type: "code",
                         lang: "text",
-                        code: `name: mytool
-version: 1.0.0
-description: Does one thing well.
-author: your-github
-
-fetch:
-  url: https://github.com/you/mytool/releases/latest/download/mytool.exe
-  checksum: sha256:abc123...
-
-install:
-  copy mytool.exe -> %LOCALAPPDATA%/mytool/mytool.exe
-  addpath %LOCALAPPDATA%/mytool
-
-uninstall:
-  remove %LOCALAPPDATA%/mytool
-  removepath %LOCALAPPDATA%/mytool`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Instruction reference",
+                        code: `# Example instruction set
+EXTRACT app-v1.2.3.zip
+CHMOD app/bin/mytool
+SET_LOCATION app/
+ADD_TO_PATH app/bin
+DELETE app-v1.2.3.zip`,
                     },
                     {
                         type: "table",
                         headers: ["Instruction", "Description"],
                         rows: [
-                            ["copy <src> -> <dest>", "Copy a file from the download to a destination path"],
-                            ["addpath <dir>", "Add a directory to the user PATH"],
-                            ["removepath <dir>", "Remove a directory from PATH"],
-                            ["remove <path>", "Delete a file or directory"],
-                            ["mkdir <dir>", "Create a directory"],
-                            ["run <cmd>", "Execute a shell command (use sparingly)"],
+                            ["EXTRACT <file>", "Unpack a zip/tar archive"],
+                            ["CHMOD <path>", "Apply executable permissions"],
+                            ["SET_LOCATION <dir>", "Set install location"],
+                            ["ADD_TO_PATH <dir>", "Append a directory to PATH"],
+                            ["DELETE <path>", "Remove a file or folder"],
                         ],
-                    },
-                    {
-                        type: "callout",
-                        kind: "tip",
-                        text: "Use %LOCALAPPDATA%, %APPDATA%, and %USERPROFILE% environment variables in paths. JPM expands them automatically.",
                     },
                 ],
             },
@@ -385,19 +494,77 @@ uninstall:
         id: "ARLO",
         slug: "arlo",
         lang: "Go · Vite",
-        title: "Fullstack Web Framework",
-        tagline: "Go backend + Vite frontend. One binary.",
+        title: "Arlo",
+        tagline: "Go backend + modern frontend. Hot reload by default.",
         description:
-            "Arlo is a lightweight fullstack framework that bundles a Go HTTP server and a Vite-powered frontend into a single deployable binary. No Dockerfiles, no separate deploys.",
+            "Arlo scaffolds fullstack Go + Vite apps, runs the dev workflow, and builds a single deployable binary with frontend assets embedded.",
         accent: "#3ddc84",
         github: "https://github.com/JasnRathore/arlo",
-        chips: ["single binary", "Go backend", "Vite frontend", "fullstack"],
+        chips: ["fullstack", "Go", "Vite", "hot-reload", "single binary"],
         badge: "active",
         highlights: [
-            { icon: "🏗️", label: "One binary", text: "Your entire app — frontend and backend — ships as a single .exe or Linux binary." },
-            { icon: "⚡", label: "Vite dev server", text: "Full HMR in dev mode, optimized Vite build embedded in prod." },
-            { icon: "🔌", label: "Go API", text: "Write your backend in idiomatic Go. No framework lock-in." },
+            { icon: "🏗️", label: "Single binary", text: "Build once and ship a single executable that serves the frontend and API." },
+            { icon: "⚡", label: "Dev orchestration", text: "One command starts the backend, frontend, and hot reload." },
+            { icon: "🔌", label: "Framework choice", text: "Pick standard net/http or Gin during scaffolding." },
         ],
+        install: {
+            defaultId: "go",
+            methods: [
+                {
+                    id: "go",
+                    label: "Go Install",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Install the CLI",
+                            shell: "bash",
+                            command: "go install github.com/JasnRathore/arlo@latest",
+                        },
+                        {
+                            kind: "command",
+                            label: "Initialize a project",
+                            shell: "bash",
+                            command: "arlo init",
+                        },
+                        {
+                            kind: "command",
+                            label: "Start dev mode",
+                            shell: "bash",
+                            command: "arlo dev",
+                        },
+                    ],
+                },
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "bash",
+                            command: "git clone https://github.com/JasnRathore/arlo",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the binary",
+                            shell: "bash",
+                            command: "cd arlo && go build -o arlo",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "arlo.exe",
+                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/arlo.exe",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -405,25 +572,22 @@ uninstall:
                 content: [
                     {
                         type: "p",
-                        text: "Arlo combines a Go HTTP server with a Vite frontend project. In development, it proxies the Vite dev server for HMR. In production, it embeds the built frontend assets using Go's embed package and serves them from the same binary as your API.",
+                        text: "Arlo is a fullstack toolkit that pairs a Go backend with a modern JS/TS frontend. It ships a unified dev workflow and produces a single binary with your frontend embedded for production.",
                     },
+                ],
+            },
+            {
+                id: "requirements",
+                title: "Requirements",
+                content: [
                     {
-                        type: "h3",
-                        text: "Project structure",
-                    },
-                    {
-                        type: "code",
-                        lang: "text",
-                        code: `my-app/
-├── main.go          # Entry point — starts Arlo
-├── routes/
-│   ├── api.go       # Your Go API handlers
-│   └── ...
-├── frontend/        # Standard Vite project
-│   ├── index.html
-│   ├── src/
-│   └── vite.config.ts
-└── arlo.config.toml # Optional config`,
+                        type: "ul",
+                        items: [
+                            "Go 1.21+",
+                            "Node.js 14+",
+                            "Air (Go hot-reload)",
+                            "One package manager: npm, yarn, pnpm, bun, or deno",
+                        ],
                     },
                 ],
             },
@@ -431,116 +595,110 @@ uninstall:
                 id: "installation",
                 title: "Installation",
                 content: [
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Via JPM
-jpm install arlo
-
-# Via Go
-go install github.com/JasnRathore/arlo/cmd/arlo@latest`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Scaffold a new project",
-                    },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `arlo new my-app
-cd my-app
-arlo dev`,
-                    },
-                ],
-            },
-            {
-                id: "routing",
-                title: "Routing",
-                content: [
-                    {
-                        type: "h3",
-                        text: "API routes (Go)",
-                    },
-                    {
-                        type: "code",
-                        lang: "go",
-                        code: `package routes
-
-import (
-    "encoding/json"
-    "net/http"
-    "github.com/JasnRathore/arlo"
-)
-
-func Register(app *arlo.App) {
-    app.GET("/api/hello", func(w http.ResponseWriter, r *http.Request) {
-        json.NewEncoder(w).Encode(map[string]string{"msg": "hello from Go"})
-    })
-
-    app.POST("/api/data", handleData)
-}`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Frontend routing (Vite + React/Vue/Svelte)",
-                    },
+                    { type: "h3", text: "Go install" },
+                    { type: "code", lang: "bash", code: `go install github.com/JasnRathore/arlo@latest` },
                     {
                         type: "p",
-                        text: "Arlo serves your Vite index.html for all non-API routes, so client-side routing works out of the box with React Router, Vue Router, etc.",
+                        text: "Ensure your Go bin directory is on PATH so the arlo command is available.",
                     },
+                    { type: "h3", text: "Build from source" },
                     {
                         type: "code",
-                        lang: "typescript",
-                        code: `// Vite frontend — fetch from Go API
-const res = await fetch('/api/hello')
-const data = await res.json()
-console.log(data.msg) // "hello from Go"`,
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/arlo
+cd arlo`,
                     },
-                ],
-            },
-            {
-                id: "building",
-                title: "Building & Deploying",
-                content: [
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Build for current platform
-arlo build
-
-# Cross-compile
-arlo build --target linux/amd64
-arlo build --target windows/amd64`,
-                    },
+                    { type: "code", lang: "bash", code: `go build -o arlo` },
+                    { type: "h3", text: "Download binary" },
                     {
                         type: "p",
-                        text: "The output is a single binary with the Vite build embedded. Copy it to any server and run it — no Node.js, no npm, no config files needed.",
+                        text: "Download the latest release asset and add it to your PATH.",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "arlo.exe",
+                        url: "https://github.com/JasnRathore/arlo/releases/latest",
                     },
                     {
                         type: "callout",
                         kind: "tip",
-                        text: "Set PORT env var to change the listening port. Default is 8080.",
+                        text: "On Linux, add $(go env GOPATH)/bin to your PATH to use arlo globally.",
                     },
                 ],
             },
             {
-                id: "config",
-                title: "Configuration",
+                id: "commands",
+                title: "Commands",
+                content: [
+                    {
+                        type: "table",
+                        headers: ["Command", "Description"],
+                        rows: [
+                            ["init (-i)", "Initialize a new project"],
+                            ["dev (-d)", "Start the dev environment"],
+                            ["build (-b)", "Build the production binary"],
+                            ["upgrade (-u)", "Upgrade Arlo"],
+                            ["version (-v)", "Print version"],
+                            ["help (-h)", "Show help"],
+                        ],
+                    },
+                ],
+            },
+            {
+                id: "getting-started",
+                title: "Getting Started",
+                content: [
+                    { type: "p", text: "Create a new project with the interactive initializer:" },
+                    { type: "code", lang: "bash", code: `arlo init` },
+                    {
+                        type: "p",
+                        text: "The setup prompts for project name, package manager, framework choice (net/http or Gin), and installs dependencies.",
+                    },
+                ],
+            },
+            {
+                id: "dev-workflow",
+                title: "Development Workflow",
+                content: [
+                    { type: "code", lang: "bash", code: `arlo dev` },
+                    {
+                        type: "ul",
+                        items: [
+                            "Starts the frontend dev server with HMR.",
+                            "Runs the Go backend with hot reload.",
+                            "Proxies frontend requests to the backend API.",
+                        ],
+                    },
+                ],
+            },
+            {
+                id: "structure",
+                title: "Project Structure",
                 content: [
                     {
                         type: "code",
-                        lang: "toml",
-                        code: `# arlo.config.toml
-[server]
-port = 8080
-host = "0.0.0.0"
-
-[frontend]
-dir = "./frontend"      # path to Vite project
-dev_port = 5173         # Vite dev server port
-
-[build]
-output = "./dist"`,
+                        lang: "text",
+                        code: `your-project/
+├── src/                    # Frontend (Vite)
+├── src-backend/            # Go backend
+│   ├── app/                # HTTP handlers
+│   ├── main.go             # Dev entry
+│   ├── build.go            # Prod build config
+│   └── .air.toml           # Hot reload config
+├── arlo.config.json
+└── .env`,
+                    },
+                ],
+            },
+            {
+                id: "build",
+                title: "Build",
+                content: [
+                    { type: "code", lang: "bash", code: `arlo build` },
+                    {
+                        type: "p",
+                        text: "The output is a single binary with frontend assets embedded for distribution.",
                     },
                 ],
             },
@@ -553,20 +711,78 @@ output = "./dist"`,
     {
         id: "GLIDE",
         slug: "glide",
-        lang: "Go · HTML/CSS/JS",
-        title: "Desktop Framework",
-        tagline: "Desktop apps with web tech and a Go backend.",
+        lang: "Go · Web UI",
+        title: "Glide",
+        tagline: "Build desktop apps with Go and your frontend.",
         description:
-            "Glide lets you build native-feeling desktop apps using HTML, CSS, and JavaScript for the UI, with Go powering the backend logic. Currently supports Windows, with a focus on performance and tiny binaries.",
+            "Glide bridges a Go backend with a modern JS/TS frontend to build native desktop apps with hot reload and a clean Go↔JS bridge.",
         accent: "#38bdf8",
         github: "https://github.com/JasnRathore/glide",
-        chips: ["desktop", "web tech", "Go backend", "windows"],
+        chips: ["desktop", "Go", "frontend", "hot-reload", "WebView"],
         badge: "active",
         highlights: [
-            { icon: "🖥️", label: "Native window", text: "Real OS window with system chrome — not an Electron wrapper." },
-            { icon: "🌐", label: "Web UI", text: "Write your interface in HTML/CSS/JS. Use any frontend library." },
-            { icon: "🔗", label: "Go bridge", text: "Call Go functions directly from JavaScript via a clean bridge API." },
+            { icon: "🖥️", label: "Native shell", text: "Uses the OS webview to render your frontend as a desktop app." },
+            { icon: "🌐", label: "Any frontend", text: "React, Vue, Svelte, or vanilla — your choice." },
+            { icon: "🔗", label: "Go bridge", text: "Call Go functions directly from JS/TS." },
         ],
+        install: {
+            defaultId: "go",
+            methods: [
+                {
+                    id: "go",
+                    label: "Go Install",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Install the CLI",
+                            shell: "bash",
+                            command: "go install github.com/JasnRathore/glide@latest",
+                        },
+                        {
+                            kind: "command",
+                            label: "Initialize a project",
+                            shell: "bash",
+                            command: "glide init",
+                        },
+                        {
+                            kind: "command",
+                            label: "Start dev mode",
+                            shell: "bash",
+                            command: "glide dev",
+                        },
+                    ],
+                },
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "bash",
+                            command: "git clone https://github.com/JasnRathore/glide",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the binary",
+                            shell: "bash",
+                            command: "cd glide && go build -o glide",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "glide.exe",
+                            url: "https://github.com/JasnRathore/glide/releases/latest/download/glide.exe",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -574,12 +790,22 @@ output = "./dist"`,
                 content: [
                     {
                         type: "p",
-                        text: "Glide uses the OS WebView (WebView2 on Windows) to render your frontend, while a Go process handles business logic, file system access, and native APIs. The two sides communicate through a bidirectional message bridge.",
+                        text: "Glide combines a Go backend with a web-based frontend so you can build native desktop apps using your preferred JS framework.",
                     },
+                ],
+            },
+            {
+                id: "requirements",
+                title: "Requirements",
+                content: [
                     {
-                        type: "callout",
-                        kind: "info",
-                        text: "WebView2 ships with Windows 11 and is auto-installed on Windows 10. Glide checks for it at startup and prompts installation if needed.",
+                        type: "ul",
+                        items: [
+                            "Go 1.21+",
+                            "Node.js 14+",
+                            "Air (Go hot-reload)",
+                            "One package manager: npm, yarn, pnpm, bun, or deno",
+                        ],
                     },
                 ],
             },
@@ -587,67 +813,51 @@ output = "./dist"`,
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Go install" },
+                    { type: "code", lang: "bash", code: `go install github.com/JasnRathore/glide@latest` },
+                    { type: "h3", text: "Build from source" },
                     {
                         type: "code",
-                        lang: "powershell",
-                        code: `jpm install glide
-
-# or via Go
-go install github.com/JasnRathore/glide/cmd/glide@latest`,
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/glide
+cd glide`,
+                    },
+                    { type: "code", lang: "bash", code: `go build -o glide` },
+                    { type: "h3", text: "Download binary" },
+                    {
+                        type: "p",
+                        text: "Download the latest release asset and add it to your PATH.",
                     },
                     {
-                        type: "h3",
-                        text: "Create a new app",
-                    },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `glide new my-desktop-app
-cd my-desktop-app
-glide dev`,
+                        type: "download",
+                        label: "Download latest release",
+                        file: "glide.exe",
+                        url: "https://github.com/JasnRathore/glide/releases/latest",
                     },
                 ],
             },
             {
-                id: "window",
-                title: "Creating Windows",
+                id: "create-project",
+                title: "Create a Project",
                 content: [
+                    { type: "code", lang: "bash", code: `glide init` },
                     {
-                        type: "code",
-                        lang: "go",
-                        code: `package main
-
-import "github.com/JasnRathore/glide"
-
-func main() {
-    app := glide.New()
-
-    win := app.NewWindow(glide.WindowConfig{
-        Title:  "My App",
-        Width:  1024,
-        Height: 768,
-        URL:    "./frontend/index.html",
-    })
-
-    win.Show()
-    app.Run()
-}`,
+                        type: "p",
+                        text: "The initializer scaffolds a Vite frontend, sets up the Go backend, and configures hot reload.",
                     },
+                ],
+            },
+            {
+                id: "dev-workflow",
+                title: "Development Workflow",
+                content: [
+                    { type: "code", lang: "bash", code: `glide dev` },
                     {
-                        type: "h3",
-                        text: "Window options",
-                    },
-                    {
-                        type: "table",
-                        headers: ["Option", "Type", "Description"],
-                        rows: [
-                            ["Title", "string", "Window title bar text"],
-                            ["Width / Height", "int", "Initial window size in pixels"],
-                            ["MinWidth / MinHeight", "int", "Minimum window size"],
-                            ["Resizable", "bool", "Whether the user can resize the window (default: true)"],
-                            ["Frameless", "bool", "Remove the OS title bar for a custom chrome"],
-                            ["URL", "string", "Path to HTML file or http:// URL to load"],
-                            ["DevTools", "bool", "Enable right-click → Inspect (default: false)"],
+                        type: "ul",
+                        items: [
+                            "Starts the frontend dev server.",
+                            "Runs the Go backend with hot reload via Air.",
+                            "Connects the frontend and backend bridge.",
                         ],
                     },
                 ],
@@ -657,64 +867,55 @@ func main() {
                 title: "Go ↔ JS Bridge",
                 content: [
                     {
-                        type: "h3",
-                        text: "Expose Go functions to JS",
+                        type: "code",
+                        lang: "javascript",
+                        code: `import { callWindowFunction } from './glide/glide.js'
+
+const greeting = callWindowFunction('Greet', 'World')
+console.log(greeting)`,
                     },
                     {
                         type: "code",
                         lang: "go",
-                        code: `// In Go — register a handler
-win.Bind("readFile", func(path string) (string, error) {
-    data, err := os.ReadFile(path)
-    return string(data), err
-})`,
-                    },
-                    {
-                        type: "code",
-                        lang: "javascript",
-                        code: `// In your frontend JS
-const content = await window.glide.readFile("./notes.txt")
-console.log(content)`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Emit events from Go",
-                    },
-                    {
-                        type: "code",
-                        lang: "go",
-                        code: `// Push data to the frontend
-win.Emit("status-update", map[string]any{"progress": 75})`,
-                    },
-                    {
-                        type: "code",
-                        lang: "javascript",
-                        code: `window.glide.on("status-update", (data) => {
-  console.log(data.progress) // 75
-})`,
+                        code: `func Greet(name string) string {
+    return fmt.Sprintf("Hello, %s", name)
+}
+
+func App() *glide.App {
+    funcs := []interface{}{Greet}
+    app.InvokeHandler(funcs)
+    return app
+}`,
                     },
                 ],
             },
             {
-                id: "building",
-                title: "Building",
+                id: "build",
+                title: "Build",
+                content: [
+                    { type: "code", lang: "bash", code: `glide build` },
+                    {
+                        type: "p",
+                        text: "The compiled binary lands in src-glide/target and includes your frontend assets.",
+                    },
+                ],
+            },
+            {
+                id: "structure",
+                title: "Project Structure",
                 content: [
                     {
                         type: "code",
-                        lang: "powershell",
-                        code: `# Build a Windows .exe with embedded frontend
-glide build
-
-# Build with a custom app icon
-glide build --icon ./assets/icon.ico
-
-# Build without console window (GUI-only)
-glide build --no-console`,
-                    },
-                    {
-                        type: "callout",
-                        kind: "tip",
-                        text: "Use glide build --upx to compress the binary with UPX. Final sizes are typically 4–8 MB for simple apps.",
+                        lang: "text",
+                        code: `your-project/
+├── src/                # Frontend (Vite)
+│   └── glide/          # Glide JS/TS utilities
+├── src-glide/          # Go backend
+│   ├── app/
+│   ├── main.go
+│   ├── build.go
+│   └── .air.toml
+└── glide.config.json`,
                     },
                 ],
             },
@@ -727,20 +928,89 @@ glide build --no-console`,
     {
         id: "PA",
         slug: "project-aliaser",
-        lang: "Go · SQLite",
+        lang: "Go · PowerShell",
         title: "Project Aliaser",
-        tagline: "Navigate your projects without typing paths.",
+        tagline: "Jump to any folder with a short alias.",
         description:
-            "Project Aliaser is a CLI tool that lets you create short aliases for frequently accessed directories. Jump anywhere in your file system with a single short command.",
+            "Project Aliaser is a Windows-first CLI + TUI that stores directory aliases in SQLite and lets you navigate with a single short command.",
         accent: "#a78bfa",
         github: "https://github.com/JasnRathore/project-aliaser",
-        chips: ["CLI", "aliases", "navigation", "SQLite"],
+        chips: ["CLI", "TUI", "aliases", "Windows", "SQLite"],
         badge: "stable",
         highlights: [
-            { icon: "🗂️", label: "Short aliases", text: "Map any deep directory path to a name you'll actually remember." },
-            { icon: "💾", label: "Persistent", text: "Aliases are stored in a local SQLite database — survive reboots." },
-            { icon: "🔍", label: "Fuzzy search", text: "Can't remember the exact alias? Search by partial name." },
+            { icon: "🗂️", label: "Short aliases", text: "Create readable shortcuts for deep project paths." },
+            { icon: "🔍", label: "Fuzzy search", text: "Find aliases even if you only remember part of the name." },
+            { icon: "💾", label: "Persistent", text: "Aliases live in %LOCALAPPDATA% and survive reboots." },
         ],
+        install: {
+            defaultId: "build",
+            methods: [
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "powershell",
+                            command: "git clone https://github.com/JasnRathore/project-aliaser",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the binary",
+                            shell: "powershell",
+                            command: "cd project-aliaser && go build",
+                        },
+                        {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "./pa.exe",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "ProjectAliaser.zip",
+                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaser@v0.2.0.zip",
+                        }, {
+                                kind: "instruction",
+                                label: "Extract the files into a folder",
+                        }, {
+                            kind: "instruction",
+                            label: "Add the folder to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "pa",
+                        },
+                    ],
+                }, {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "ProjectAliaserSetup.exe",
+                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaserSetup@v0.2.0.exe",
+                        }, {
+                                kind: "instruction",
+                                label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "pa",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -748,12 +1018,21 @@ glide build --no-console`,
                 content: [
                     {
                         type: "p",
-                        text: "Project Aliaser stores directory aliases in a local SQLite database and generates a shell function (pa) that you source into your shell profile. Running pa <alias> changes your current directory — regardless of where you are.",
+                        text: "Project Aliaser lets you create short aliases for long directory paths and jump to them instantly in PowerShell.",
                     },
+                ],
+            },
+            {
+                id: "requirements",
+                title: "Requirements",
+                content: [
                     {
-                        type: "callout",
-                        kind: "info",
-                        text: "Because cd must affect the current shell, Project Aliaser outputs a shell function rather than changing directories directly from the binary.",
+                        type: "ul",
+                        items: [
+                            "Windows with PowerShell",
+                            "Go 1.22.1+ (for building from source)",
+                            "SQLite (handled automatically)",
+                        ],
                     },
                 ],
             },
@@ -761,74 +1040,126 @@ glide build --no-console`,
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Build from source" },
                     {
                         type: "code",
                         lang: "powershell",
-                        code: `jpm install project-aliaser
-
-# or build from source
-go install github.com/JasnRathore/project-aliaser@latest`,
+                        code: `git clone https://github.com/JasnRathore/project-aliaser
+cd project-aliaser`,
+                    },
+                    { type: "code", lang: "powershell", code: `go build` },
+                    {
+                        type: "p",
+                        text: "Keep pa.ps1 and lib.psm1 in the same directory as the executable, add the folder to PATH, then run pa in PowerShell.",
                     },
                     {
-                        type: "h3",
-                        text: "Shell integration",
+                        type: "ul",
+                        items: [
+                            "Add the folder to your PATH",
+                        ],
                     },
                     {
                         type: "p",
-                        text: "Add the following to your PowerShell profile ($PROFILE) or .bashrc / .zshrc:",
+                        text: "Run the binary",
                     },
+                    { type: "code", lang: "powershell", code: `./pa.exe` },
+                    { type: "h3", text: "Download Release Binary" }, 
+                    {
+                        type: "p",
+                        text: "Download the latest release ZIP",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "ProjectAliaser.zip",
+                        url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaser@v0.2.0.zip",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Extract the files into a folder",
+                            "Add the folder to your PATH",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `pa` },
+                    { type: "h3", text: "Download Release Setup" }, 
+                    {
+                        type: "p",
+                        text: "Download the latest release Setup",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "ProjectAliaserSetup.exe",
+                        url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaserSetup@v0.2.0.exe",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Run the installer and follow the prompts",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `pa` },
+                ],
+            },
+            {
+                id: "usage",
+                title: "Usage",
+                content: [
                     {
                         type: "code",
                         lang: "powershell",
-                        code: `# PowerShell — add to $PROFILE
-function pa { Set-Location (project-aliaser go $args[0]) }`,
-                    },
-                    {
-                        type: "code",
-                        lang: "bash",
-                        code: `# bash / zsh — add to ~/.bashrc or ~/.zshrc
-pa() { cd "$(project-aliaser go "$1")" }`,
+                        code: `# Add an alias to the current directory
+pa add projects .
+
+# Add an alias to a specific path
+pa add documents "C:\\Users\\username\\Documents"
+
+# List aliases
+pa list
+
+# Jump to an alias
+pa projects
+
+# Delete an alias
+pa delete projects`,
                     },
                 ],
             },
             {
-                id: "commands",
-                title: "Commands",
+                id: "tui",
+                title: "Interactive UI",
                 content: [
                     {
-                        type: "table",
-                        headers: ["Command", "Description"],
-                        rows: [
-                            ["project-aliaser add <alias> [path]", "Create an alias (defaults to current directory)"],
-                            ["project-aliaser go <alias>", "Print the path for an alias (used by shell function)"],
-                            ["project-aliaser list", "List all stored aliases"],
-                            ["project-aliaser remove <alias>", "Delete an alias"],
-                            ["project-aliaser search <query>", "Fuzzy-search aliases by name or path"],
-                            ["project-aliaser rename <old> <new>", "Rename an alias"],
+                        type: "p",
+                        text: "Run pa with no arguments to open the TUI.",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Use arrow keys or j/k to navigate.",
+                            "Press Enter to select and jump.",
+                            "Press q to quit.",
+                            "Use the Search screen for fuzzy lookup.",
                         ],
                     },
+                ],
+            },
+            {
+                id: "storage",
+                title: "Storage",
+                content: [
                     {
-                        type: "h3",
-                        text: "Examples",
-                    },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `# Alias current directory
-cd C:\\Users\\jasn\\projects\\my-game
-project-aliaser add game
-
-# Alias a specific path
-project-aliaser add docs C:\\Users\\jasn\\Documents\\dev-notes
-
-# Jump to alias (via shell function)
-pa game       # → cd C:\Users\jasn\projects\my-game
-pa docs       # → cd C:\Users\jasn\Documents\dev-notes
-
-# List all
-project-aliaser list
-#  game   → C:\Users\jasn\projects\my-game
-#  docs   → C:\Users\jasn\Documents\dev-notes`,
+                        type: "p",
+                        text: "Aliases are stored in %LOCALAPPDATA%\\ProjectAliaser as aliases.db. A mid_file.json file is used to pass the selected path to the PowerShell wrapper.",
                     },
                 ],
             },
@@ -842,19 +1173,59 @@ project-aliaser list
         id: "JCC",
         slug: "jcommandchain",
         lang: "Go",
-        title: "JCommand Chain",
-        tagline: "Alias commands. Chain them. Run in parallel.",
+        title: "JCommandChain",
+        tagline: "Alias commands and run them together.",
         description:
-            "JCC is a CLI utility for aliasing long commands and chaining multiple commands to run sequentially or concurrently. Replace repetitive terminal workflows with a single short command.",
+            "JCommandChain lets you define command aliases and run multiple commands concurrently or sequentially with a single short command.",
         accent: "#f472b6",
         github: "https://github.com/JasnRathore/JCommandChain",
-        chips: ["CLI", "concurrency", "aliases", "automation"],
+        chips: ["CLI", "aliases", "concurrent", "automation"],
         badge: "stable",
         highlights: [
-            { icon: "⛓️", label: "Command chains", text: "Define named sequences of commands and run them with one word." },
-            { icon: "🔀", label: "Parallel execution", text: "Run commands concurrently — useful for starting multiple dev servers." },
-            { icon: "📝", label: "Simple config", text: "Plain TOML config file. No DSL to learn." },
+            { icon: "⛓️", label: "Alias commands", text: "Map long scripts to short names you can remember." },
+            { icon: "🔀", label: "Run multiple", text: "Launch several commands at once for dev workflows." },
+            { icon: "🧾", label: "JSON config", text: "Simple jcc.config.json with aliases and command groups." },
         ],
+        install: {
+            defaultId: "build",
+            methods: [
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "powershell",
+                            command: "git clone https://github.com/JasnRathore/JCommandChain",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the binary",
+                            shell: "powershell",
+                            command: "cd JCommandChain && go build -o jcc.exe",
+                        },
+                        {
+                            kind: "command",
+                            label: "Create config",
+                            shell: "powershell",
+                            command: "jcc --init",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "jcc.exe",
+                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/jcc.exe",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -862,7 +1233,12 @@ project-aliaser list
                 content: [
                     {
                         type: "p",
-                        text: "JCC reads a chains.toml file and exposes each chain as a named command. Chains can run their steps in order (sequential) or all at once (parallel). It's useful for things like 'start my dev environment' or 'build and deploy'.",
+                        text: "JCommandChain (JCC) is a small CLI that lets you alias commands and run multiple commands concurrently from a single name.",
+                    },
+                    {
+                        type: "callout",
+                        kind: "info",
+                        text: "Currently tested on Windows.",
                     },
                 ],
             },
@@ -870,13 +1246,42 @@ project-aliaser list
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Build from source" },
                     {
                         type: "code",
                         lang: "powershell",
-                        code: `jpm install jcc
-
-go install github.com/JasnRathore/JCommandChain@latest`,
+                        code: `git clone https://github.com/JasnRathore/JCommandChain
+cd JCommandChain`,
                     },
+                    { type: "code", lang: "powershell", code: `go build -o jcc.exe` },
+                    { type: "code", lang: "powershell", code: `$env:PATH += \";C:\\\\path\\\\to\\\\jcc\"` },
+                    { type: "h3", text: "Download release" },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "jcc.exe",
+                        url: "https://github.com/JasnRathore/JCommandChain/releases/latest",
+                    },
+                    {
+                        type: "p",
+                        text: "Add the executable directory to PATH.",
+                    },
+                ],
+            },
+            {
+                id: "init",
+                title: "Initialize Config",
+                content: [
+                    {
+                        type: "p",
+                        text: "Create a config file in the current directory:",
+                    },
+                    { type: "code", lang: "powershell", code: `jcc --init` },
+                    {
+                        type: "p",
+                        text: "If the exe is not on PATH:",
+                    },
+                    { type: "code", lang: "powershell", code: `./jcc.exe --init` },
                 ],
             },
             {
@@ -885,77 +1290,46 @@ go install github.com/JasnRathore/JCommandChain@latest`,
                 content: [
                     {
                         type: "p",
-                        text: "Create a chains.toml in your project root or in %APPDATA%\\jcc\\chains.toml for global chains.",
+                        text: "JCC reads jcc.config.json with aliases and grouped commands:",
                     },
                     {
                         type: "code",
-                        lang: "toml",
-                        code: `# chains.toml
-
-[chain.dev]
-description = "Start full dev environment"
-mode = "parallel"
-steps = [
-  "arlo dev",
-  "cd frontend && npm run dev",
-  "redis-server"
-]
-
-[chain.build]
-description = "Build and package"
-mode = "sequential"
-steps = [
-  "npm run lint",
-  "npm run test",
-  "arlo build",
-  "echo Build complete"
-]
-
-[chain.clean]
-description = "Clean build artifacts"
-mode = "sequential"
-steps = [
-  "rm -rf ./dist",
-  "rm -rf ./frontend/dist",
-  "go clean ./..."
-]`,
+                        lang: "json",
+                        code: `{
+  "aliases": {
+    "client": "LiveReloadWebServer 'path/client' --port 1200 -useSsl --useLiveReload",
+    "tailwind": "npx tailwindcss -i ./client/input.css -o ./client/output.css --watch"
+  },
+  "multiple": {
+    "run": ["client", "tailwind"]
+  }
+}`,
                     },
+                    { type: "h3", text: "Rules" },
                     {
-                        type: "table",
-                        headers: ["Field", "Values", "Description"],
-                        rows: [
-                            ["mode", "sequential | parallel", "How to run the steps"],
-                            ["steps", "string[]", "List of shell commands to execute"],
-                            ["description", "string", "Human-readable description (shown in jcc list)"],
-                            ["cwd", "string", "Working directory for all steps (optional)"],
-                            ["env", "table", "Extra environment variables (optional)"],
+                        type: "ul",
+                        items: [
+                            "Do not use the same name in aliases and multiple.",
+                            "Do not put raw commands inside multiple; use alias names.",
                         ],
                     },
                 ],
             },
             {
-                id: "commands",
-                title: "Commands",
+                id: "usage",
+                title: "Usage",
                 content: [
                     {
                         type: "code",
                         lang: "powershell",
-                        code: `# Run a chain
-jcc run dev
+                        code: `# Run a single alias
+jcc client
 
-# List all defined chains
-jcc list
+# Run multiple aliases directly
+jcc client tailwind
 
-# Validate your chains.toml
-jcc check
-
-# Run with a specific config file
-jcc run build --config ./scripts/chains.toml`,
-                    },
-                    {
-                        type: "callout",
-                        kind: "tip",
-                        text: "Use jcc run dev --dry to print what would be executed without actually running anything.",
+# Run a named group from config
+jcc run`,
                     },
                 ],
             },
@@ -970,18 +1344,58 @@ jcc run build --config ./scripts/chains.toml`,
         slug: "jyntaxe",
         lang: "Tauri · React · Rust",
         title: "Jyntaxe",
-        tagline: "Fullscreen code editor. Nothing in the way.",
+        tagline: "Fullscreen, keyboard-first code editor.",
         description:
-            "Jyntaxe is a minimalist fullscreen code editor built with Tauri and React. It strips away every UI element that isn't the code itself, giving you a distraction-free writing surface backed by Rust performance.",
+            "Jyntaxe is a minimalist fullscreen editor built with Tauri, React, and Rust — fast file I/O, fuzzy search, and persistent sessions.",
         accent: "#FF6B2B",
         github: "https://github.com/JasnRathore/jyntaxe",
         chips: ["editor", "fullscreen", "Tauri", "Rust", "React"],
         badge: "active",
         highlights: [
-            { icon: "🖤", label: "Fullscreen first", text: "Opens full-screen. The editor is the whole screen." },
-            { icon: "⚡", label: "Rust performance", text: "File I/O and parsing are handled by Rust — instantly fast." },
-            { icon: "🎨", label: "Syntax highlighting", text: "Tree-sitter based highlighting for 40+ languages." },
+            { icon: "⌨️", label: "Keyboard-first", text: "Command palette, quick open, and file switcher on one hand." },
+            { icon: "🧠", label: "Session memory", text: "Reopens your last folder and files on launch." },
+            { icon: "⚡", label: "Native speed", text: "Rust-powered file operations inside a tiny Tauri binary." },
         ],
+        install: {
+            defaultId: "release",
+            methods: [
+                {
+                    id: "release",
+                    label: "Download Installer",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "jyntaxe-setup.exe",
+                            url: "https://github.com/JasnRathore/jyntaxe/releases/latest/download/jyntaxe-setup.exe",
+                        },
+                    ],
+                },
+                {
+                    id: "build",
+                    label: "Build From Source",
+                    steps: [
+                        {
+                            kind: "command",
+                            label: "Clone the repo",
+                            shell: "bash",
+                            command: "git clone https://github.com/JasnRathore/jyntaxe",
+                        },
+                        {
+                            kind: "command",
+                            label: "Install dependencies",
+                            shell: "bash",
+                            command: "cd jyntaxe && npm install",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build the installer",
+                            shell: "bash",
+                            command: "cd jyntaxe && npm run tauri build",
+                        },
+                    ],
+                },
+            ],
+        },
         docs: [
             {
                 id: "overview",
@@ -989,12 +1403,43 @@ jcc run build --config ./scripts/chains.toml`,
                 content: [
                     {
                         type: "p",
-                        text: "Jyntaxe is built on Tauri — a Rust-based alternative to Electron that produces significantly smaller binaries. The editor UI is a React app using CodeMirror 6 for editing, with a Rust backend handling file operations, config, and platform integration.",
+                        text: "Jyntaxe is a lightweight fullscreen code editor designed for keyboard-driven workflows. It keeps the UI minimal so your code stays front and center.",
                     },
                     {
                         type: "callout",
                         kind: "info",
-                        text: "Total binary size is under 6 MB on Windows. Compare to a minimal Electron app at 60–150 MB.",
+                        text: "Currently tested and supported on Windows only.",
+                    },
+                ],
+            },
+            {
+                id: "features",
+                title: "Features",
+                content: [
+                    {
+                        type: "ul",
+                        items: [
+                            "Command palette with fuzzy search.",
+                            "Quick open (Ctrl+P) across the current folder.",
+                            "Open file/folder dialogs and multi-file tabs.",
+                            "Toast notifications for saves and errors.",
+                            "Persistent session state across restarts.",
+                        ],
+                    },
+                ],
+            },
+            {
+                id: "requirements",
+                title: "Requirements",
+                content: [
+                    {
+                        type: "ul",
+                        items: [
+                            "Node.js 18+",
+                            "Rust stable toolchain",
+                            "Tauri CLI prerequisites (including WebView2 on Windows)",
+                            "Tailwind CSS CLI (via PostCSS in the build)",
+                        ],
                     },
                 ],
             },
@@ -1002,27 +1447,48 @@ jcc run build --config ./scripts/chains.toml`,
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Download installer" },
                     {
-                        type: "code",
-                        lang: "powershell",
-                        code: `jpm install jyntaxe`,
+                        type: "download",
+                        label: "Download latest installer",
+                        file: "jyntaxe-setup.exe",
+                        url: "https://github.com/JasnRathore/jyntaxe/releases/latest",
                     },
                     {
                         type: "p",
-                        text: "Or download the installer from the GitHub releases page. The NSIS installer is under 8 MB.",
+                        text: "Run the installer, then launch Jyntaxe from the Start menu or desktop shortcut.",
                     },
-                    {
-                        type: "h3",
-                        text: "Build from source",
-                    },
+                    { type: "h3", text: "Build from source" },
                     {
                         type: "code",
-                        lang: "powershell",
-                        code: `# Prerequisites: Rust, Node.js, Tauri CLI
-git clone https://github.com/JasnRathore/jyntaxe
-cd jyntaxe
-npm install
-npm run tauri build`,
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/jyntaxe
+cd jyntaxe`,
+                    },
+                    { type: "code", lang: "bash", code: `npm install` },
+                    { type: "code", lang: "bash", code: `npm run tauri build` },
+                ],
+            },
+            {
+                id: "development",
+                title: "Development",
+                content: [
+                    { type: "code", lang: "bash", code: `npm run tauri dev` },
+                    {
+                        type: "callout",
+                        kind: "info",
+                        text: "Opening a new window (Ctrl+Shift+N) does not work in dev mode; it relies on the compiled binary path.",
+                    },
+                ],
+            },
+            {
+                id: "build",
+                title: "Production Build",
+                content: [
+                    { type: "code", lang: "bash", code: `npm run tauri build` },
+                    {
+                        type: "p",
+                        text: "Installers and executables are output to src-tauri/target/release/bundle/.",
                     },
                 ],
             },
@@ -1032,54 +1498,20 @@ npm run tauri build`,
                 content: [
                     {
                         type: "table",
-                        headers: ["Shortcut", "Action"],
+                        headers: ["Action", "Keybinding"],
                         rows: [
-                            ["Ctrl+O", "Open file"],
-                            ["Ctrl+S", "Save"],
-                            ["Ctrl+Shift+S", "Save as"],
-                            ["Ctrl+N", "New file"],
-                            ["Ctrl+W", "Close file"],
-                            ["Ctrl+P", "Command palette"],
-                            ["Ctrl+/", "Toggle comment"],
-                            ["Ctrl+D", "Duplicate line"],
-                            ["Alt+Up/Down", "Move line up/down"],
-                            ["F11", "Toggle fullscreen"],
-                            ["Ctrl+,", "Open settings"],
+                            ["Command palette", "Ctrl + Shift + P"],
+                            ["Open file", "Ctrl + O"],
+                            ["Open folder", "Ctrl + K → O"],
+                            ["New file", "Ctrl + N"],
+                            ["Save", "Ctrl + S"],
+                            ["Close file", "Ctrl + W"],
+                            ["Quick open", "Ctrl + P"],
+                            ["Switch file (prev)", "Alt + ,"],
+                            ["Switch file (next)", "Alt + ."],
+                            ["New window", "Ctrl + Shift + N"],
+                            ["Close application", "Ctrl + Q"],
                         ],
-                    },
-                ],
-            },
-            {
-                id: "settings",
-                title: "Settings",
-                content: [
-                    {
-                        type: "p",
-                        text: "Settings are stored in %APPDATA%\\jyntaxe\\config.json.",
-                    },
-                    {
-                        type: "code",
-                        lang: "json",
-                        code: `{
-  "theme": "dark",
-  "font": "Fira Code",
-  "fontSize": 15,
-  "lineHeight": 1.6,
-  "tabSize": 2,
-  "wordWrap": false,
-  "showLineNumbers": true,
-  "cursorBlink": true,
-  "autosave": false,
-  "autosaveInterval": 5000
-}`,
-                    },
-                    {
-                        type: "h3",
-                        text: "Themes",
-                    },
-                    {
-                        type: "p",
-                        text: "Jyntaxe ships with dark, light, and monokai themes. Custom themes can be added as JSON files in %APPDATA%\\jyntaxe\\themes\\.",
                     },
                 ],
             },

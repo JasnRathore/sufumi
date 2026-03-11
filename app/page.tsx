@@ -868,14 +868,14 @@ export default function Home() {
       <div id="tools" className="sf-section">
         <div className="sf-section-header" data-label="TOOLS">
           <div>
-            <p className="sf-section-label">// 01 — Projects</p>
+            <p className="sf-section-label">{"// 01 — Projects"}</p>
             <h2 className="sf-section-title">
               The full<br /><em>toolkit.</em>
             </h2>
           </div>
           <p className="sf-section-sub">
             Seven tools. Each one built because something was too slow,
-            too heavy, or simply didn't exist.
+            too heavy, or simply didn&apos;t exist.
           </p>
         </div>
         <div className="sf-grid">
@@ -895,12 +895,10 @@ export default function Home() {
       >
         <div className="sf-philo__inner">
           <div>
-            <p className="sf-section-label" style={{ marginBottom: "1.75rem" }}>// 02 — Philosophy</p>
+            <p className="sf-section-label" style={{ marginBottom: "1.75rem" }}>{"// 02 — Philosophy"}</p>
             <blockquote className="sf-philo__quote">
-              "Developer tools should be{" "}
-              <strong>invisible.</strong>
-              {" "}If you're thinking about your build system,
-              it's already failed you."
+              Developer tools should be <strong>invisible.</strong>{" "}
+              If you&apos;re thinking about your build system, it&apos;s already failed you.
             </blockquote>
           </div>
           <ul className="sf-philo__list">
@@ -933,7 +931,7 @@ export default function Home() {
           transition: "opacity .85s ease, transform .85s ease",
         }}
       >
-        <p className="sf-section-label" style={{ marginBottom: "1.75rem" }}>// 03 — Get started</p>
+        <p className="sf-section-label" style={{ marginBottom: "1.75rem" }}>{"// 03 — Get started"}</p>
         <div className="sf-cta__grid">
           <div className="sf-cta__panel">
             <p className="sf-cta__panel-label">Start here</p>

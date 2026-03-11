@@ -106,6 +106,22 @@ function DocBlockRenderer({ block, accent }: { block: DocBlock; accent: string }
             </ul>
         );
 
+    if (block.type === "download")
+        return (
+            <div className="doc-download-wrap">
+                <a
+                    className="doc-download"
+                    href={block.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ borderColor: accent, color: accent }}
+                >
+                    {block.label}
+                </a>
+                {block.file && <span className="doc-download-file">File: {block.file}</span>}
+            </div>
+        );
+
     if (block.type === "callout") {
         const v = {
             tip: { border: accent, bg: `${accent}0c`, label: "Tip", color: accent },
@@ -153,13 +169,12 @@ export default function DocsPage() {
     const slug = normalizeSlug(params?.slug);
     const tool = getTool(slug);
 
-    const [activeSection, setActiveSection] = useState<string>("");
+    const [activeSection, setActiveSection] = useState<string>(() => tool?.docs[0]?.id ?? "");
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
     useEffect(() => {
         if (!tool) return;
-        setActiveSection(tool.docs[0]?.id ?? "");
         const observer = new IntersectionObserver(
             (entries) => {
                 // Pick the topmost intersecting section
@@ -378,6 +393,34 @@ export default function DocsPage() {
                 }
                 .doc-ul li:first-child { border-top: 1px solid rgba(238,235,228,.05); }
                 .doc-ul-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; margin-top: .65rem; }
+
+                .doc-download-wrap {
+                    display: flex; align-items: center; flex-wrap: wrap; gap: .7rem;
+                    margin-bottom: 1.25rem;
+                }
+                .doc-download {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    padding: .62rem 1.25rem; border: 1px solid; border-radius: 999px;
+                    font-family: 'DM Mono', monospace; font-size: .62rem;
+                    text-transform: uppercase; letter-spacing: .18em; text-decoration: none;
+                    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+                    box-shadow: 0 10px 24px rgba(0,0,0,.2);
+                    transition: transform .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
+                }
+                .doc-download:hover {
+                    transform: translateY(-1px);
+                    background: rgba(255,255,255,.05);
+                    box-shadow: 0 14px 28px rgba(0,0,0,.28);
+                }
+                .doc-download-file {
+                    display: inline-flex; align-items: center; gap: .35rem;
+                    padding: .4rem .75rem; border-radius: 999px;
+                    border: 1px solid rgba(238,235,228,.12);
+                    background: rgba(255,255,255,.03);
+                    font-family: 'DM Mono', monospace; font-size: .58rem;
+                    letter-spacing: .06em;
+                    color: rgba(238,235,228,.55);
+                }
 
                 .doc-callout { margin-bottom: 1.25rem; padding: 1.1rem 1.4rem; border-left: 3px solid; border-radius: 0 4px 4px 0; }
                 .doc-callout-label {
