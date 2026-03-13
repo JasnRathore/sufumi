@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getTool, normalizeSlug, TOOLS, type Tool } from "@/lib/tools";
+import { getTool, isToolInDev, normalizeSlug, TOOLS, type Tool } from "@/lib/tools";
 import { SufumiNav } from "@/components/SufumiNav";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -168,6 +168,9 @@ export default function ToolPage() {
     if (!tool) return null;
 
     const { accent } = tool;
+    const eyebrowText = tool.badge ?? "open source";
+    const statusText = tool.badge ?? "active";
+    const isDev = isToolInDev(tool);
     const idx = TOOLS.findIndex((t) => t.slug === slug);
     const prev = TOOLS[idx - 1];
     const next = TOOLS[idx + 1];
@@ -261,6 +264,15 @@ export default function ToolPage() {
                     font-family: 'DM Mono', monospace; font-size: .65rem;
                     text-transform: uppercase; letter-spacing: .22em;
                     color: rgba(238,235,228,.3);
+                }
+                .tp-dev-badge {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-family: 'DM Mono', monospace; font-size: .56rem;
+                    text-transform: uppercase; letter-spacing: .18em;
+                    padding: 2px 7px; border-radius: 2px; line-height: 1;
+                }
+                .tp-dev-badge--meta {
+                    font-size: .62rem; letter-spacing: .12em; padding: 3px 8px;
                 }
                 .tp-hero__eyebrow-dot {
                     width: 6px; height: 6px; border-radius: 50%;
@@ -598,6 +610,13 @@ export default function ToolPage() {
                     text-transform: uppercase; letter-spacing: .18em;
                     margin-top: .25rem;
                 }
+                .tp-nav-card__badge {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-family: 'DM Mono', monospace; font-size: .52rem;
+                    text-transform: uppercase; letter-spacing: .16em;
+                    padding: 2px 6px; border-radius: 2px; line-height: 1;
+                    margin-top: .35rem;
+                }
                 .tp-nav-card__title {
                     font-family: 'Bebas Neue', sans-serif;
                     font-size: 1.8rem; letter-spacing: .03em; line-height: .9;
@@ -683,7 +702,18 @@ export default function ToolPage() {
                         <div>
                             <div className="tp-hero__eyebrow tp-fu">
                                 <span className="tp-hero__eyebrow-dot" style={{ background: accent }} />
-                                {tool.lang} · {tool.badge ?? "open source"}
+                                <span>{tool.lang}</span>
+                                <span style={{ opacity: .4 }}>·</span>
+                                {isDev ? (
+                                    <span
+                                        className="tp-dev-badge"
+                                        style={{ color: accent, border: `1px solid ${accent}55`, background: `${accent}14` }}
+                                    >
+                                        {eyebrowText}
+                                    </span>
+                                ) : (
+                                    <span>{eyebrowText}</span>
+                                )}
                             </div>
                             <span className="tp-hero__id tp-fu" style={{ color: accent }}>
                                 {tool.id}
@@ -734,7 +764,14 @@ export default function ToolPage() {
                                 </div>
                                 <div className="tp-hero__meta-row">
                                     <span className="tp-hero__meta-key">Status</span>
-                                    <span className="tp-hero__meta-val mono" style={{ color: accent }}>{tool.badge ?? "active"}</span>
+                                    <span
+                                        className={`tp-hero__meta-val mono${isDev ? " tp-dev-badge tp-dev-badge--meta" : ""}`}
+                                        style={isDev
+                                            ? { color: accent, border: `1px solid ${accent}55`, background: `${accent}14` }
+                                            : { color: accent }}
+                                    >
+                                        {statusText}
+                                    </span>
                                 </div>
                                 <div className="tp-hero__chips">
                                     {tool.chips.map((c) => (
@@ -904,6 +941,14 @@ export default function ToolPage() {
                                 <div className="tp-nav-card__glow" style={{ background: `radial-gradient(circle, ${prev.accent}30, transparent 70%)` }} />
                                 <span className="tp-nav-card__dir">← previous</span>
                                 <span className="tp-nav-card__id" style={{ color: prev.accent }}>{prev.id}</span>
+                                {isToolInDev(prev) && (
+                                    <span
+                                        className="tp-nav-card__badge"
+                                        style={{ color: prev.accent, border: `1px solid ${prev.accent}55`, background: `${prev.accent}14` }}
+                                    >
+                                        Dev
+                                    </span>
+                                )}
                                 <span className="tp-nav-card__title">{prev.title}</span>
                                 <span className="tp-nav-card__tagline">{prev.tagline}</span>
                             </Link>
@@ -913,6 +958,14 @@ export default function ToolPage() {
                                 <div className="tp-nav-card__glow" style={{ background: `radial-gradient(circle, ${next.accent}30, transparent 70%)` }} />
                                 <span className="tp-nav-card__dir">next →</span>
                                 <span className="tp-nav-card__id" style={{ color: next.accent }}>{next.id}</span>
+                                {isToolInDev(next) && (
+                                    <span
+                                        className="tp-nav-card__badge"
+                                        style={{ color: next.accent, border: `1px solid ${next.accent}55`, background: `${next.accent}14` }}
+                                    >
+                                        Dev
+                                    </span>
+                                )}
                                 <span className="tp-nav-card__title">{next.title}</span>
                                 <span className="tp-nav-card__tagline">{next.tagline}</span>
                             </Link>

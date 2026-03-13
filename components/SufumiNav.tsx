@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { TOOLS } from "@/lib/tools";
+import { isToolInDev, TOOLS } from "@/lib/tools";
 
 export function SufumiNav() {
     const pathname = usePathname();
@@ -73,6 +73,14 @@ export function SufumiNav() {
                     border-color: rgba(255,255,255,.08);
                     background: rgba(255,255,255,.04);
                 }
+                .sfn-tool-badge {
+                    margin-left: 6px;
+                    font-size: .5rem;
+                    letter-spacing: .16em;
+                    text-transform: uppercase;
+                    padding: 1px 5px;
+                    border-radius: 2px;
+                }
 
                 /* Right */
                 .sfn-right {
@@ -121,6 +129,18 @@ export function SufumiNav() {
                                     style={active ? { color: t.accent, borderColor: t.accent + '28', background: t.accent + '0d' } : {}}
                                 >
                                     {t.id}
+                                    {isToolInDev(t) && (
+                                        <span
+                                            className="sfn-tool-badge"
+                                            style={{
+                                                color: t.accent,
+                                                border: `1px solid ${t.accent}55`,
+                                                background: `${t.accent}1a`,
+                                            }}
+                                        >
+                                            Dev
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}

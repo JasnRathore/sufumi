@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getTool, normalizeSlug, TOOLS, DocBlock } from "@/lib/tools";
+import { getTool, isToolInDev, normalizeSlug, TOOLS, DocBlock } from "@/lib/tools";
 import { SufumiNav } from "@/components/SufumiNav";
 
 const GH_PATH = "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z";
@@ -59,6 +59,14 @@ function SidebarInner({
                 <span className="doc-sidebar-id" style={{ color: accent, borderColor: `${accent}28`, background: `${accent}0d` }}>
                     {tool.id}
                 </span>
+                {isToolInDev(tool) && (
+                    <span
+                        className="doc-dev-badge doc-dev-badge--tiny"
+                        style={{ color: accent, border: `1px solid ${accent}55`, background: `${accent}14` }}
+                    >
+                        Dev
+                    </span>
+                )}
                 <span className="doc-sidebar-name">{tool.title}</span>
             </div>
             <div className="doc-sidebar-divider" />
@@ -195,6 +203,7 @@ export default function DocsPage() {
     if (!tool) return null;
 
     const { accent } = tool;
+    const isDev = isToolInDev(tool);
     const idx = TOOLS.findIndex((t) => t.slug === slug);
     const prev = TOOLS[idx - 1];
     const next = TOOLS[idx + 1];
@@ -269,6 +278,15 @@ export default function DocsPage() {
                 .doc-sidebar-name {
                     font-family: 'Instrument Serif', serif; font-style: italic;
                     font-size: .82rem; color: rgba(238,235,228,.45);
+                }
+                .doc-dev-badge {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-family: 'DM Mono', monospace; font-size: .5rem;
+                    text-transform: uppercase; letter-spacing: .16em;
+                    padding: 2px 6px; border-radius: 2px; line-height: 1;
+                }
+                .doc-dev-badge--tiny {
+                    font-size: .46rem; letter-spacing: .12em; padding: 1px 5px;
                 }
                 .doc-sidebar-label {
                     font-family: 'DM Mono', monospace; font-size: .56rem;
@@ -573,6 +591,14 @@ export default function DocsPage() {
                             <div className="doc-title-block doc-fade" style={{ animationDelay: ".05s" }}>
                                 <div className="doc-title-meta">
                                     <span className="doc-title-id" style={{ color: accent, borderColor: `${accent}30`, background: `${accent}0e` }}>{tool.id}</span>
+                                    {isDev && (
+                                        <span
+                                            className="doc-dev-badge"
+                                            style={{ color: accent, border: `1px solid ${accent}55`, background: `${accent}14` }}
+                                        >
+                                            In dev
+                                        </span>
+                                    )}
                                     <span className="doc-title-lang">{tool.lang}</span>
                                 </div>
                                 <h1 className="doc-title-h1">{tool.title} <span>/ docs</span></h1>
@@ -610,12 +636,28 @@ export default function DocsPage() {
                                     <Link href={`/tools/${prev.slug}/docs`} className="doc-nav-card">
                                         <span className="doc-nav-dir">← prev</span>
                                         <span className="doc-nav-title">{prev.title}</span>
+                                        {isToolInDev(prev) && (
+                                            <span
+                                                className="doc-dev-badge doc-dev-badge--tiny"
+                                                style={{ color: prev.accent, border: `1px solid ${prev.accent}55`, background: `${prev.accent}14` }}
+                                            >
+                                                Dev
+                                            </span>
+                                        )}
                                     </Link>
                                 ) : <div style={{ background: "#060606" }} />}
                                 {next ? (
                                     <Link href={`/tools/${next.slug}/docs`} className="doc-nav-card right">
                                         <span className="doc-nav-dir">next →</span>
                                         <span className="doc-nav-title">{next.title}</span>
+                                        {isToolInDev(next) && (
+                                            <span
+                                                className="doc-dev-badge doc-dev-badge--tiny"
+                                                style={{ color: next.accent, border: `1px solid ${next.accent}55`, background: `${next.accent}14` }}
+                                            >
+                                                Dev
+                                            </span>
+                                        )}
                                     </Link>
                                 ) : <div style={{ background: "#060606" }} />}
                             </div>

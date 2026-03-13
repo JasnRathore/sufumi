@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { TOOLS } from "@/lib/tools";
+import { isToolInDev, TOOLS } from "@/lib/tools";
 
 /* ═══════════════════════════════════════════════════
    SUFUMI — Homepage
@@ -76,6 +76,14 @@ function Marquee() {
               {String(TOOLS.findIndex(x => x.slug === t.slug) + 1).padStart(2, "0")}
             </span>
             <span className="sf-marquee__name">{t.title}</span>
+            {isToolInDev(t) && (
+              <span
+                className="sf-dev-badge sf-dev-badge--tiny"
+                style={{ color: t.accent, border: `1px solid ${t.accent}55`, background: `${t.accent}14` }}
+              >
+                Dev
+              </span>
+            )}
             <span className="sf-marquee__div">·</span>
           </Link>
         ))}
@@ -126,7 +134,17 @@ function ToolCard({ tool, idx }: { tool: typeof TOOLS[0]; idx: number }) {
       </div>
 
       <div className="sf-card__body">
-        <span className="sf-card__id" style={{ color: tool.accent, fontFamily: "'DM Mono', monospace" }}>{tool.id}</span>
+        <div className="sf-card__id-row">
+          <span className="sf-card__id" style={{ color: tool.accent, fontFamily: "'DM Mono', monospace" }}>{tool.id}</span>
+          {isToolInDev(tool) && (
+            <span
+              className="sf-dev-badge"
+              style={{ color: tool.accent, border: `1px solid ${tool.accent}55`, background: `${tool.accent}14` }}
+            >
+              In dev
+            </span>
+          )}
+        </div>
         <h3 className="sf-card__title">{tool.title}</h3>
         <p className="sf-card__desc">{tool.description}</p>
       </div>
@@ -560,9 +578,19 @@ export default function Home() {
           color: rgba(238,235,228,.22); white-space: nowrap;
         }
         .sf-card__body { flex: 1; }
+        .sf-card__id-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .65rem; }
         .sf-card__id {
           font-size: .62rem; text-transform: uppercase; letter-spacing: .2em;
-          display: block; margin-bottom: .65rem;
+          display: block;
+        }
+        .sf-dev-badge {
+          display: inline-flex; align-items: center; justify-content: center;
+          font-family: 'DM Mono', monospace; font-size: .55rem;
+          text-transform: uppercase; letter-spacing: .18em;
+          padding: 2px 7px; border-radius: 2px; line-height: 1;
+        }
+        .sf-dev-badge--tiny {
+          font-size: .48rem; letter-spacing: .14em; padding: 1px 6px;
         }
         .sf-card__title {
           font-family: 'Instrument Serif', serif; font-size: 1.4rem;
@@ -749,6 +777,7 @@ export default function Home() {
           font-family: 'DM Mono', monospace; font-size: .62rem;
           color: rgba(238,235,228,.2); text-decoration: none;
           letter-spacing: .1em; text-transform: uppercase; transition: color .2s;
+          display: inline-flex; align-items: center; gap: .4rem;
         }
         .sf-footer__link:hover { color: rgba(238,235,228,.6); }
 
@@ -963,6 +992,14 @@ export default function Home() {
                     <span className="sf-tlist__id"
                       style={{ color: t.accent, fontFamily: "'DM Mono', monospace" }}>{t.id}</span>
                     <span className="sf-tlist__name">{t.title}</span>
+                    {isToolInDev(t) && (
+                      <span
+                        className="sf-dev-badge sf-dev-badge--tiny"
+                        style={{ color: t.accent, border: `1px solid ${t.accent}55`, background: `${t.accent}14` }}
+                      >
+                        In dev
+                      </span>
+                    )}
                   </div>
                   <div className="sf-tlist__links">
                     <Link href={`/tools/${t.slug}`} className="sf-tlist__link">Page</Link>
@@ -984,7 +1021,17 @@ export default function Home() {
           <nav className="sf-footer__links">
             <a href="https://github.com/JasnRathore" target="_blank" className="sf-footer__link">GitHub</a>
             {TOOLS.map(t => (
-              <Link key={t.slug} href={`/tools/${t.slug}`} className="sf-footer__link">{t.id}</Link>
+              <Link key={t.slug} href={`/tools/${t.slug}`} className="sf-footer__link">
+                {t.id}
+                {isToolInDev(t) && (
+                  <span
+                    className="sf-dev-badge sf-dev-badge--tiny"
+                    style={{ color: t.accent, border: `1px solid ${t.accent}55`, background: `${t.accent}14` }}
+                  >
+                    Dev
+                  </span>
+                )}
+              </Link>
             ))}
           </nav>
         </div>

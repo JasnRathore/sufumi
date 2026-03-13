@@ -43,6 +43,11 @@ export type Tool = {
     docs: DocSection[];
 };
 
+export function isToolInDev(tool: Tool) {
+    const badge = tool.badge?.toLowerCase() ?? "";
+    return badge.includes("dev");
+}
+
 export const TOOLS: Tool[] = [
     // ──────────────────────────────────────────────
     // JHR
@@ -269,7 +274,7 @@ delay = 1000`,
         accent: "#FFB830",
         github: "https://github.com/JasnRathore/jpm",
         chips: ["CLI", "package manager", "Turso", "SQLite", "semver"],
-        badge: "active",
+        badge: "in dev",
         highlights: [
             { icon: "📦", label: "Remote registry", text: "Fetch package metadata from a Turso/libSQL backend." },
             { icon: "🧾", label: "Local ledger", text: "Track installs, files, and PATH changes in SQLite." },
@@ -1350,7 +1355,7 @@ jcc run`,
         accent: "#FF6B2B",
         github: "https://github.com/JasnRathore/jyntaxe",
         chips: ["editor", "fullscreen", "Tauri", "Rust", "React"],
-        badge: "active",
+        badge: "in dev",
         highlights: [
             { icon: "⌨️", label: "Keyboard-first", text: "Command palette, quick open, and file switcher on one hand." },
             { icon: "🧠", label: "Session memory", text: "Reopens your last folder and files on launch." },
