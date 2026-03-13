@@ -35,6 +35,10 @@ export type Tool = {
     github: string;
     chips: string[];
     badge?: string;
+    downloadable?: {
+        enabled: boolean;
+        reason?: string;
+    };
     highlights: { icon: string; label: string; text: string }[];
     install: {
         defaultId?: string;
@@ -70,8 +74,49 @@ export const TOOLS: Tool[] = [
             { icon: "🧩", label: "Configurable", text: "Simple .jhr.conf for classpath, args, watch dirs, and delays." },
         ],
         install: {
-            defaultId: "build",
+            defaultId: "setup",
             methods: [
+                {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "JavaHotReloaderSetup.exe",
+                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/JavaHotReloaderSetup.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "pa",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "JavaHotReloader.zip",
+                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/JavaHotReloader.zip",
+                        }, {
+                            kind: "instruction",
+                            label: "Extract the files into a folder",
+                        }, {
+                            kind: "instruction",
+                            label: "Add the folder to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "jhr --help",
+                        },
+                    ],
+                },
                 {
                     id: "build",
                     label: "Build From Source",
@@ -84,26 +129,21 @@ export const TOOLS: Tool[] = [
                         },
                         {
                             kind: "command",
-                            label: "Build JHR",
-                            shell: "bash",
-                            command: "cd jhr && chmod +x build && ./build",
+                            label: "Build JHR jar",
+                            shell: "powershell",
+                            command: "cd jhr && ./buildjar.ps1",
+                        },
+                        {
+                            kind: "command",
+                            label: "Build JHR exe",
+                            shell: "powershell",
+                            command: "./buildexe.ps1",
                         },
                         {
                             kind: "command",
                             label: "Run the launcher",
-                            shell: "bash",
-                            command: "cd jhr && ./target/jhr",
-                        },
-                    ],
-                },
-                {
-                    id: "download",
-                    label: "Download Binary",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "jhr.jar",
-                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/jhr.jar",
+                            shell: "powershell",
+                            command: "./release/jhr.exe  --help",
                         },
                     ],
                 },
@@ -148,31 +188,70 @@ cd jhr`,
                     },
                     {
                         type: "code",
-                        lang: "bash",
-                        code: `chmod +x build
-./build`,
-                    },
-                    {
-                        type: "code",
-                        lang: "bash",
-                        code: `chmod +x target/jhr
-./target/jhr`,
+                        lang: "powershell",
+                        code: `buildjar.ps1`,
                     },
                     {
                         type: "p",
                         text: "This produces target/jhr.jar and the target/jhr launcher script.",
                     },
-                    { type: "h3", text: "Download binary" },
+                    {
+                        type: "code",
+                        lang: "powershell",
+                        code: `buildexe.ps1`,
+                    },
                     {
                         type: "p",
-                        text: "Download the latest release asset, extract it, and add the folder to PATH.",
+                        text: "This produces release/jhr.exe and the required files in release",
+                    },
+                    {
+                        type: "code", lang: "powershell", code: `cd release
+./jhr.exe --help` },
+                    { type: "h3", text: "Download Release Binary" },
+                    {
+                        type: "p",
+                        text: "Download the latest release ZIP",
                     },
                     {
                         type: "download",
                         label: "Download latest release",
-                        file: "jhr.jar",
-                        url: "https://github.com/JasnRathore/jhr/releases/latest",
+                        file: "JavaHotReloader.zip",
+                        url: "https://github.com/JasnRathore/jhr/releases/download/0.2.0/JavaHotReloader@v0.2.0.zip",
                     },
+                    {
+                        type: "ul",
+                        items: [
+                            "Extract the files into a folder",
+                            "Add the folder to your PATH",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `jhr --help` },
+                    { type: "h3", text: "Download Release Setup" },
+                    {
+                        type: "p",
+                        text: "Download the latest release Setup",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "JavaHotReloaderSetup.exe",
+                        url: "https://github.com/JasnRathore/jhr/releases/download/0.2.0/JavaHotReloaderSetup@v0.2.0.exe",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Run the installer and follow the prompts",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `jhr --help` },
                 ],
             },
             {
@@ -275,6 +354,10 @@ delay = 1000`,
         github: "https://github.com/JasnRathore/jpm",
         chips: ["CLI", "package manager", "Turso", "SQLite", "semver"],
         badge: "in dev",
+        downloadable: {
+            enabled: false,
+            reason: "Public binaries are disabled while JPM is in active development.",
+        },
         highlights: [
             { icon: "📦", label: "Remote registry", text: "Fetch package metadata from a Turso/libSQL backend." },
             { icon: "🧾", label: "Local ledger", text: "Track installs, files, and PATH changes in SQLite." },
@@ -538,6 +621,43 @@ DELETE app-v1.2.3.zip`,
                             command: "arlo dev",
                         },
                     ],
+                }, {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "ArloSetup.exe",
+                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/ArloSetup.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "arlo --help",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "arlo.exe",
+                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/arlo.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Add the exe to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "arlo --help",
+                        },
+                    ],
                 },
                 {
                     id: "build",
@@ -554,17 +674,6 @@ DELETE app-v1.2.3.zip`,
                             label: "Build the binary",
                             shell: "bash",
                             command: "cd arlo && go build -o arlo",
-                        },
-                    ],
-                },
-                {
-                    id: "download",
-                    label: "Download Binary",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "arlo.exe",
-                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/arlo.exe",
                         },
                     ],
                 },
@@ -600,21 +709,43 @@ DELETE app-v1.2.3.zip`,
                 id: "installation",
                 title: "Installation",
                 content: [
+                    {
+                        type: "callout",
+                        kind: "tip",
+                        text: "On Linux, add $(go env GOPATH)/bin to your PATH to use arlo globally.",
+                    },
                     { type: "h3", text: "Go install" },
                     { type: "code", lang: "bash", code: `go install github.com/JasnRathore/arlo@latest` },
                     {
                         type: "p",
                         text: "Ensure your Go bin directory is on PATH so the arlo command is available.",
                     },
-                    { type: "h3", text: "Build from source" },
                     {
-                        type: "code",
-                        lang: "bash",
-                        code: `git clone https://github.com/JasnRathore/arlo
-cd arlo`,
+                        type: "code", lang: "powershell", code: `arlo --help`
                     },
-                    { type: "code", lang: "bash", code: `go build -o arlo` },
-                    { type: "h3", text: "Download binary" },
+                    { type: "h3", text: "Download Release Setup" },
+                    {
+                        type: "p",
+                        text: "Download the latest release Setup",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "ArloSetup.exe",
+                        url: "https://github.com/JasnRathore/arlo/releases/download/0.2.0/ArloSetup@v0.2.0.exe",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Run the installer and follow the prompts",
+                        ],
+                    }, {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    {
+                        type: "code", lang: "powershell", code: `arlo --help`
+                    }, { type: "h3", text: "Download binary" },
                     {
                         type: "p",
                         text: "Download the latest release asset and add it to your PATH.",
@@ -626,9 +757,28 @@ cd arlo`,
                         url: "https://github.com/JasnRathore/arlo/releases/latest",
                     },
                     {
-                        type: "callout",
-                        kind: "tip",
-                        text: "On Linux, add $(go env GOPATH)/bin to your PATH to use arlo globally.",
+                        type: "ul",
+                        items: [
+                            "Add the exe to your PATH",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    {
+                        type: "code", lang: "powershell", code: `arlo --help`
+                    },
+                    { type: "h3", text: "Build from source" },
+                    {
+                        type: "code",
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/arlo
+cd arlo`,
+                    },
+                    { type: "code", lang: "bash", code: `go build -o arlo` },
+                    {
+                        type: "code", lang: "powershell", code: `arlo --help`
                     },
                 ],
             },
@@ -758,6 +908,44 @@ cd arlo`,
                     ],
                 },
                 {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "GlideSetup.exe",
+                            url: "https://github.com/JasnRathore/glide/releases/latest/download/GlideSetup.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "glide --help",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "glide.exe",
+                            url: "https://github.com/JasnRathore/glide/releases/latest/download/glide.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Add the exe to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "glide --help",
+                        },
+                    ],
+                },
+                {
                     id: "build",
                     label: "Build From Source",
                     steps: [
@@ -772,17 +960,6 @@ cd arlo`,
                             label: "Build the binary",
                             shell: "bash",
                             command: "cd glide && go build -o glide",
-                        },
-                    ],
-                },
-                {
-                    id: "download",
-                    label: "Download Binary",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "glide.exe",
-                            url: "https://github.com/JasnRathore/glide/releases/latest/download/glide.exe",
                         },
                     ],
                 },
@@ -818,17 +995,42 @@ cd arlo`,
                 id: "installation",
                 title: "Installation",
                 content: [
+                    {
+                        type: "callout",
+                        kind: "tip",
+                        text: "On Linux, add $(go env GOPATH)/bin to your PATH to use glide globally.",
+                    },
                     { type: "h3", text: "Go install" },
                     { type: "code", lang: "bash", code: `go install github.com/JasnRathore/glide@latest` },
-                    { type: "h3", text: "Build from source" },
                     {
-                        type: "code",
-                        lang: "bash",
-                        code: `git clone https://github.com/JasnRathore/glide
-cd glide`,
+                        type: "p",
+                        text: "Ensure your Go bin directory is on PATH so the glide command is available.",
                     },
-                    { type: "code", lang: "bash", code: `go build -o glide` },
-                    { type: "h3", text: "Download binary" },
+                    {
+                        type: "code", lang: "powershell", code: `glide --help`
+                    }, { type: "h3", text: "Download Release Setup" },
+                    {
+                        type: "p",
+                        text: "Download the latest release Setup",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "GlideSetup.exe",
+                        url: "https://github.com/JasnRathore/glide/releases/download/0.2.0/GlideSetup@v0.2.0.exe",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Run the installer and follow the prompts",
+                        ],
+                    }, {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    {
+                        type: "code", lang: "powershell", code: `glide --help`
+                    }, { type: "h3", text: "Download binary" },
                     {
                         type: "p",
                         text: "Download the latest release asset and add it to your PATH.",
@@ -838,7 +1040,27 @@ cd glide`,
                         label: "Download latest release",
                         file: "glide.exe",
                         url: "https://github.com/JasnRathore/glide/releases/latest",
+                    }, {
+                        type: "ul",
+                        items: [
+                            "Add the exe to your PATH",
+                        ],
                     },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    {
+                        type: "code", lang: "powershell", code: `glide --help`
+                    },
+                    { type: "h3", text: "Build from source" },
+                    {
+                        type: "code",
+                        lang: "bash",
+                        code: `git clone https://github.com/JasnRathore/glide
+cd glide`,
+                    },
+                    { type: "code", lang: "bash", code: `go build -o glide` },
                 ],
             },
             {
@@ -948,8 +1170,49 @@ func App() *glide.App {
             { icon: "💾", label: "Persistent", text: "Aliases live in %LOCALAPPDATA% and survive reboots." },
         ],
         install: {
-            defaultId: "build",
+            defaultId: "setup",
             methods: [
+                {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "ProjectAliaserSetup.exe",
+                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaserSetup@v0.2.0.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "pa",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "ProjectAliaser.zip",
+                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaser@v0.2.0.zip",
+                        }, {
+                            kind: "instruction",
+                            label: "Extract the files into a folder",
+                        }, {
+                            kind: "instruction",
+                            label: "Add the folder to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "pa",
+                        },
+                    ],
+                },
                 {
                     id: "build",
                     label: "Build From Source",
@@ -971,46 +1234,6 @@ func App() *glide.App {
                             label: "Run in PowerShell",
                             shell: "powershell",
                             command: "./pa.exe",
-                        },
-                    ],
-                },
-                {
-                    id: "download",
-                    label: "Download Binary",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "ProjectAliaser.zip",
-                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaser@v0.2.0.zip",
-                        }, {
-                                kind: "instruction",
-                                label: "Extract the files into a folder",
-                        }, {
-                            kind: "instruction",
-                            label: "Add the folder to your PATH",
-                        }, {
-                            kind: "command",
-                            label: "Run in PowerShell",
-                            shell: "powershell",
-                            command: "pa",
-                        },
-                    ],
-                }, {
-                    id: "setup",
-                    label: "Download Setup",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "ProjectAliaserSetup.exe",
-                            url: "https://github.com/JasnRathore/project-aliaser/releases/download/0.2.0/ProjectAliaserSetup@v0.2.0.exe",
-                        }, {
-                                kind: "instruction",
-                                label: "Run the installer and follow the prompts",
-                        }, {
-                            kind: "command",
-                            label: "Run in PowerShell",
-                            shell: "powershell",
-                            command: "pa",
                         },
                     ],
                 },
@@ -1068,7 +1291,7 @@ cd project-aliaser`,
                         text: "Run the binary",
                     },
                     { type: "code", lang: "powershell", code: `./pa.exe` },
-                    { type: "h3", text: "Download Release Binary" }, 
+                    { type: "h3", text: "Download Release Binary" },
                     {
                         type: "p",
                         text: "Download the latest release ZIP",
@@ -1091,7 +1314,7 @@ cd project-aliaser`,
                         text: "Run the binary",
                     },
                     { type: "code", lang: "powershell", code: `pa` },
-                    { type: "h3", text: "Download Release Setup" }, 
+                    { type: "h3", text: "Download Release Setup" },
                     {
                         type: "p",
                         text: "Download the latest release Setup",
@@ -1192,8 +1415,47 @@ pa delete projects`,
             { icon: "🧾", label: "JSON config", text: "Simple jcc.config.json with aliases and command groups." },
         ],
         install: {
-            defaultId: "build",
+            defaultId: "setup",
             methods: [
+                {
+                    id: "setup",
+                    label: "Download Setup",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "JCommandChainSetup.exe",
+                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/JCommandChainSetup.exe",
+                        }, {
+                            kind: "instruction",
+                            label: "Run the installer and follow the prompts",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "jcc init",
+                        },
+                    ],
+                },
+                {
+                    id: "download",
+                    label: "Download Binary",
+                    steps: [
+                        {
+                            kind: "download",
+                            label: "jcc.exe",
+                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/jcc.exe",
+                        },
+                        {
+                            kind: "instruction",
+                            label: "Add the exe to your PATH",
+                        }, {
+                            kind: "command",
+                            label: "Run in PowerShell",
+                            shell: "powershell",
+                            command: "jcc init",
+                        },
+                    ],
+                },
                 {
                     id: "build",
                     label: "Build From Source",
@@ -1218,17 +1480,6 @@ pa delete projects`,
                         },
                     ],
                 },
-                {
-                    id: "download",
-                    label: "Download Binary",
-                    steps: [
-                        {
-                            kind: "download",
-                            label: "jcc.exe",
-                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/jcc.exe",
-                        },
-                    ],
-                },
             ],
         },
         docs: [
@@ -1250,27 +1501,57 @@ pa delete projects`,
             {
                 id: "installation",
                 title: "Installation",
-                content: [
-                    { type: "h3", text: "Build from source" },
-                    {
-                        type: "code",
-                        lang: "powershell",
-                        code: `git clone https://github.com/JasnRathore/JCommandChain
+                content: [{ type: "h3", text: "Download Release Setup" },
+                {
+                    type: "p",
+                    text: "Download the latest release Setup",
+                },
+                {
+                    type: "download",
+                    label: "Download latest release",
+                    file: "JCommandChainSetup.exe",
+                    url: "https://github.com/JasnRathore/JCommandChain/releases/download/0.2.0/JCommandChainSetup@v0.2.0.exe",
+                },
+                {
+                    type: "ul",
+                    items: [
+                        "Run the installer and follow the prompts",
+                    ],
+                }, {
+                    type: "p",
+                    text: "Run the binary",
+                },
+                {
+                    type: "code", lang: "powershell", code: `jcc init`
+                },
+                { type: "h3", text: "Download release" },
+                {
+                    type: "download",
+                    label: "Download latest release",
+                    file: "jcc.exe",
+                    url: "https://github.com/JasnRathore/JCommandChain/releases/latest",
+                },
+                {
+                    type: "ul",
+                    items: [
+                        "Add the exe to your PATH",
+                    ],
+                },
+                {
+                    type: "p",
+                    text: "Run the binary",
+                },
+                {
+                    type: "code", lang: "powershell", code: `jcc init`
+                },
+                { type: "h3", text: "Build from source" },
+                {
+                    type: "code",
+                    lang: "powershell",
+                    code: `git clone https://github.com/JasnRathore/JCommandChain
 cd JCommandChain`,
-                    },
-                    { type: "code", lang: "powershell", code: `go build -o jcc.exe` },
-                    { type: "code", lang: "powershell", code: `$env:PATH += \";C:\\\\path\\\\to\\\\jcc\"` },
-                    { type: "h3", text: "Download release" },
-                    {
-                        type: "download",
-                        label: "Download latest release",
-                        file: "jcc.exe",
-                        url: "https://github.com/JasnRathore/JCommandChain/releases/latest",
-                    },
-                    {
-                        type: "p",
-                        text: "Add the executable directory to PATH.",
-                    },
+                },
+                { type: "code", lang: "powershell", code: `go build -o jcc.exe` },
                 ],
             },
             {
@@ -1356,6 +1637,10 @@ jcc run`,
         github: "https://github.com/JasnRathore/jyntaxe",
         chips: ["editor", "fullscreen", "Tauri", "Rust", "React"],
         badge: "in dev",
+        downloadable: {
+            enabled: false,
+            reason: "Currently in early development with a focus on core features and stability. Will enable downloads once it's ready for wider testing.",
+        },
         highlights: [
             { icon: "⌨️", label: "Keyboard-first", text: "Command palette, quick open, and file switcher on one hand." },
             { icon: "🧠", label: "Session memory", text: "Reopens your last folder and files on launch." },

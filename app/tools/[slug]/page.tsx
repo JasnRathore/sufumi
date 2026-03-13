@@ -60,13 +60,27 @@ function useReveal(threshold = 0.08) {
 /* ─────────────────────────────────────────────────────────────────
    Animated install command (tool-specific terminal snippet)
 ───────────────────────────────────────────────────────────────── */
-function InstallBlock({ install, accent }: { install: Tool["install"]; accent: string }) {
+function InstallBlock({
+    install,
+    accent,
+    downloadable,
+}: {
+    install: Tool["install"];
+    accent: string;
+    downloadable?: Tool["downloadable"];
+}) {
     type Step = Tool["install"]["methods"][number]["steps"][number];
     type CommandStep = Extract<Step, { kind: "command" }>;
     type DownloadStep = Extract<Step, { kind: "download" }>;
 
-    const methods = install.methods;
-    const defaultId = install.defaultId ?? methods[0]?.id;
+    const downloadsEnabled = downloadable?.enabled !== false;
+    const downloadReason = downloadable?.reason ?? "Downloads are not available for this tool yet.";
+    const methods = install.methods
+        .map((method) => (downloadsEnabled ? method : { ...method, steps: method.steps.filter((s) => s.kind !== "download") }))
+        .filter((method) => method.steps.length > 0);
+    const defaultId = install.defaultId && methods.some((m) => m.id === install.defaultId)
+        ? install.defaultId
+        : methods[0]?.id;
     const [activeId, setActiveId] = useState(defaultId ?? "");
     const active = methods.find((m) => m.id === activeId) ?? methods[0];
     const steps = active?.steps ?? [];
@@ -116,6 +130,15 @@ function InstallBlock({ install, accent }: { install: Tool["install"]; accent: s
                     );
                 })}
             </div>
+            {!downloadsEnabled && (
+                <div
+                    className="tp-install__notice"
+                    style={{ borderColor: `${accent}35`, background: `${accent}0a` }}
+                >
+                    <span className="tp-install__notice-label" style={{ color: accent }}>Downloads disabled</span>
+                    <span className="tp-install__notice-text">{downloadReason}</span>
+                </div>
+            )}
             {hasCommands && (
                 <>
                     <div className="tp-install__chrome">
@@ -530,6 +553,19 @@ export default function ToolPage() {
                 .tp-install__tab.is-active {
                     background: rgba(238,235,228,.05);
                 }
+                .tp-install__notice {
+                    display: flex; flex-direction: column; gap: .35rem;
+                    padding: .75rem .95rem;
+                    border-top: 1px solid; border-bottom: 1px solid;
+                }
+                .tp-install__notice-label {
+                    font-family: 'DM Mono', monospace;
+                    font-size: .58rem; text-transform: uppercase; letter-spacing: .16em;
+                }
+                .tp-install__notice-text {
+                    font-family: 'Instrument Serif', serif; font-style: italic;
+                    font-size: .82rem; line-height: 1.6; color: rgba(238,235,228,.55);
+                }
                 .tp-install__chrome {
                     display: flex; align-items: center; gap: 6px; padding: 11px 14px;
                     border-bottom: 1px solid rgba(238,235,228,.06);
@@ -929,7 +965,7 @@ export default function ToolPage() {
                                 </a>
                             </div>
                         </div>
-                        <InstallBlock install={tool.install} accent={accent} />
+                        <InstallBlock install={tool.install} accent={accent} downloadable={tool.downloadable} />
                     </div>
                 </div>
 

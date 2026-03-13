@@ -83,7 +83,17 @@ function SidebarInner({
 }
 
 // ── Doc block renderer ───────────────────────────────────────────────────────
-function DocBlockRenderer({ block, accent }: { block: DocBlock; accent: string }) {
+function DocBlockRenderer({
+    block,
+    accent,
+    downloadsEnabled,
+    downloadReason,
+}: {
+    block: DocBlock;
+    accent: string;
+    downloadsEnabled: boolean;
+    downloadReason?: string;
+}) {
     if (block.type === "p") return <p>{block.text}</p>;
     if (block.type === "h3") return <h3>{block.text}</h3>;
 
@@ -115,7 +125,7 @@ function DocBlockRenderer({ block, accent }: { block: DocBlock; accent: string }
         );
 
     if (block.type === "download")
-        return (
+        return downloadsEnabled ? (
             <div className="doc-download-wrap">
                 <a
                     className="doc-download"
@@ -127,6 +137,11 @@ function DocBlockRenderer({ block, accent }: { block: DocBlock; accent: string }
                     {block.label}
                 </a>
                 {block.file && <span className="doc-download-file">File: {block.file}</span>}
+            </div>
+        ) : (
+            <div className="doc-callout" style={{ borderLeftColor: "rgba(255,184,48,.6)", background: "rgba(255,184,48,.06)" }}>
+                <span className="doc-callout-label" style={{ color: "rgba(255,184,48,.85)" }}>Downloads disabled</span>
+                <span className="doc-callout-text">{downloadReason ?? "Downloads are not available for this tool yet."}</span>
             </div>
         );
 
@@ -203,6 +218,8 @@ export default function DocsPage() {
     if (!tool) return null;
 
     const { accent } = tool;
+    const downloadsEnabled = tool.downloadable?.enabled !== false;
+    const downloadReason = tool.downloadable?.reason;
     const isDev = isToolInDev(tool);
     const idx = TOOLS.findIndex((t) => t.slug === slug);
     const prev = TOOLS[idx - 1];
@@ -624,7 +641,13 @@ export default function DocsPage() {
                                         </div>
                                         <div className="doc-prose">
                                             {section.content.map((block, bi) => (
-                                                <DocBlockRenderer key={bi} block={block} accent={accent} />
+                                                <DocBlockRenderer
+                                                    key={bi}
+                                                    block={block}
+                                                    accent={accent}
+                                                    downloadsEnabled={downloadsEnabled}
+                                                    downloadReason={downloadReason}
+                                                />
                                             ))}
                                         </div>
                                     </section>
