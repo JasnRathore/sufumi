@@ -83,7 +83,7 @@ export const TOOLS: Tool[] = [
                         {
                             kind: "download",
                             label: "JavaHotReloaderSetup.exe",
-                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/JavaHotReloaderSetup.exe",
+                            url: "https://github.com/JasnRathore/jhr/releases/download/v0.2.0/JavaHotReloaderSetup@v0.2.0.exe",
                         }, {
                             kind: "instruction",
                             label: "Run the installer and follow the prompts",
@@ -102,7 +102,7 @@ export const TOOLS: Tool[] = [
                         {
                             kind: "download",
                             label: "JavaHotReloader.zip",
-                            url: "https://github.com/JasnRathore/jhr/releases/latest/download/JavaHotReloader.zip",
+                            url: "https://github.com/JasnRathore/jhr/releases/download/v0.2.0/JavaHotReloader@v0.2.0.zip",
                         }, {
                             kind: "instruction",
                             label: "Extract the files into a folder",
@@ -179,6 +179,51 @@ export const TOOLS: Tool[] = [
                 id: "installation",
                 title: "Installation",
                 content: [
+                    { type: "h3", text: "Download Release Setup" },
+                    {
+                        type: "p",
+                        text: "Download the latest release Setup",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "JavaHotReloaderSetup.exe",
+                        url: "https://github.com/JasnRathore/jhr/releases/download/v0.2.0/JavaHotReloaderSetup@v0.2.0.exe",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Run the installer and follow the prompts",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `jhr --help` },
+                    { type: "h3", text: "Download Release Binary" },
+                    {
+                        type: "p",
+                        text: "Download the latest release ZIP",
+                    },
+                    {
+                        type: "download",
+                        label: "Download latest release",
+                        file: "JavaHotReloader.zip",
+                        url: "https://github.com/JasnRathore/jhr/releases/download/v0.2.0/JavaHotReloader@v0.2.0.zip",
+                    },
+                    {
+                        type: "ul",
+                        items: [
+                            "Extract the files into a folder",
+                            "Add the folder to your PATH",
+                        ],
+                    },
+                    {
+                        type: "p",
+                        text: "Run the binary",
+                    },
+                    { type: "code", lang: "powershell", code: `jhr --help` },
                     { type: "h3", text: "Build from source" },
                     {
                         type: "code",
@@ -207,51 +252,6 @@ cd jhr`,
                     {
                         type: "code", lang: "powershell", code: `cd release
 ./jhr.exe --help` },
-                    { type: "h3", text: "Download Release Binary" },
-                    {
-                        type: "p",
-                        text: "Download the latest release ZIP",
-                    },
-                    {
-                        type: "download",
-                        label: "Download latest release",
-                        file: "JavaHotReloader.zip",
-                        url: "https://github.com/JasnRathore/jhr/releases/download/0.2.0/JavaHotReloader@v0.2.0.zip",
-                    },
-                    {
-                        type: "ul",
-                        items: [
-                            "Extract the files into a folder",
-                            "Add the folder to your PATH",
-                        ],
-                    },
-                    {
-                        type: "p",
-                        text: "Run the binary",
-                    },
-                    { type: "code", lang: "powershell", code: `jhr --help` },
-                    { type: "h3", text: "Download Release Setup" },
-                    {
-                        type: "p",
-                        text: "Download the latest release Setup",
-                    },
-                    {
-                        type: "download",
-                        label: "Download latest release",
-                        file: "JavaHotReloaderSetup.exe",
-                        url: "https://github.com/JasnRathore/jhr/releases/download/0.2.0/JavaHotReloaderSetup@v0.2.0.exe",
-                    },
-                    {
-                        type: "ul",
-                        items: [
-                            "Run the installer and follow the prompts",
-                        ],
-                    },
-                    {
-                        type: "p",
-                        text: "Run the binary",
-                    },
-                    { type: "code", lang: "powershell", code: `jhr --help` },
                 ],
             },
             {
@@ -628,7 +628,7 @@ DELETE app-v1.2.3.zip`,
                         {
                             kind: "download",
                             label: "ArloSetup.exe",
-                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/ArloSetup.exe",
+                            url: "https://github.com/JasnRathore/arlo/releases/download/v0.1.1/ArloSetup@0.1.1.exe",
                         }, {
                             kind: "instruction",
                             label: "Run the installer and follow the prompts",
@@ -647,7 +647,7 @@ DELETE app-v1.2.3.zip`,
                         {
                             kind: "download",
                             label: "arlo.exe",
-                            url: "https://github.com/JasnRathore/arlo/releases/latest/download/arlo.exe",
+                            url: "https://github.com/JasnRathore/arlo/releases/download/v0.1.1/arlo.exe",
                         }, {
                             kind: "instruction",
                             label: "Add the exe to your PATH",
@@ -732,7 +732,7 @@ DELETE app-v1.2.3.zip`,
                         type: "download",
                         label: "Download latest release",
                         file: "ArloSetup.exe",
-                        url: "https://github.com/JasnRathore/arlo/releases/download/0.2.0/ArloSetup@v0.2.0.exe",
+                        url: "https://github.com/JasnRathore/arlo/releases/download/v0.1.1/ArloSetup@0.1.1.exe",
                     },
                     {
                         type: "ul",
@@ -754,7 +754,7 @@ DELETE app-v1.2.3.zip`,
                         type: "download",
                         label: "Download latest release",
                         file: "arlo.exe",
-                        url: "https://github.com/JasnRathore/arlo/releases/latest",
+                        url: "https://github.com/JasnRathore/arlo/releases/download/v0.1.1/arlo.exe",
                     },
                     {
                         type: "ul",
@@ -914,7 +914,7 @@ cd arlo`,
                         {
                             kind: "download",
                             label: "GlideSetup.exe",
-                            url: "https://github.com/JasnRathore/glide/releases/latest/download/GlideSetup.exe",
+                            url: "https://github.com/JasnRathore/glide/releases/download/v0.1.2/GlideSetup@v0.1.2.exe",
                         }, {
                             kind: "instruction",
                             label: "Run the installer and follow the prompts",
@@ -933,7 +933,7 @@ cd arlo`,
                         {
                             kind: "download",
                             label: "glide.exe",
-                            url: "https://github.com/JasnRathore/glide/releases/latest/download/glide.exe",
+                            url: "https://github.com/JasnRathore/glide/releases/download/v0.1.2/glide.exe",
                         }, {
                             kind: "instruction",
                             label: "Add the exe to your PATH",
@@ -1017,7 +1017,7 @@ cd arlo`,
                         type: "download",
                         label: "Download latest release",
                         file: "GlideSetup.exe",
-                        url: "https://github.com/JasnRathore/glide/releases/download/0.2.0/GlideSetup@v0.2.0.exe",
+                        url: "https://github.com/JasnRathore/glide/releases/download/v0.1.2/GlideSetup@v0.1.2.exe",
                     },
                     {
                         type: "ul",
@@ -1039,7 +1039,7 @@ cd arlo`,
                         type: "download",
                         label: "Download latest release",
                         file: "glide.exe",
-                        url: "https://github.com/JasnRathore/glide/releases/latest",
+                        url: "https://github.com/JasnRathore/glide/releases/download/v0.1.2/glide.exe",
                     }, {
                         type: "ul",
                         items: [
@@ -1424,7 +1424,7 @@ pa delete projects`,
                         {
                             kind: "download",
                             label: "JCommandChainSetup.exe",
-                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/JCommandChainSetup.exe",
+                            url: "https://github.com/JasnRathore/JCommandChain/releases/download/v0.1.1/JCommandChainSetup@v0.1.1.exe",
                         }, {
                             kind: "instruction",
                             label: "Run the installer and follow the prompts",
@@ -1443,7 +1443,7 @@ pa delete projects`,
                         {
                             kind: "download",
                             label: "jcc.exe",
-                            url: "https://github.com/JasnRathore/JCommandChain/releases/latest/download/jcc.exe",
+                            url: "https://github.com/JasnRathore/JCommandChain/releases/download/v0.1.1/jcc.exe",
                         },
                         {
                             kind: "instruction",
@@ -1510,7 +1510,7 @@ pa delete projects`,
                     type: "download",
                     label: "Download latest release",
                     file: "JCommandChainSetup.exe",
-                    url: "https://github.com/JasnRathore/JCommandChain/releases/download/0.2.0/JCommandChainSetup@v0.2.0.exe",
+                    url: "https://github.com/JasnRathore/JCommandChain/releases/download/v0.1.1/JCommandChainSetup@v0.1.1.exe",
                 },
                 {
                     type: "ul",
@@ -1529,7 +1529,7 @@ pa delete projects`,
                     type: "download",
                     label: "Download latest release",
                     file: "jcc.exe",
-                    url: "https://github.com/JasnRathore/JCommandChain/releases/latest",
+                    url: "https://github.com/JasnRathore/JCommandChain/releases/download/v0.1.1/jcc.exe",
                 },
                 {
                     type: "ul",
